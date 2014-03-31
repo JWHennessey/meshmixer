@@ -82,64 +82,6 @@ SceneT<M>::SceneT()
   controls->layout()->addWidget(removeModelButton);
   removeModelButton->setHidden(true);
   
-  noiseSpinBox = new QDoubleSpinBox();
-  noiseSpinBox->setFocusPolicy(Qt::StrongFocus);
-  noiseSpinBox->setMinimum(0.001);
-  noiseSpinBox->setMaximum(1.00);
-  noiseSpinBox->setSingleStep(0.001);
-  //noiseSpinBox->setMinimumWidth(200);
-  noiseSpinBox->setDecimals(3);
-  noiseSpinBox->setPrefix("Noise: ");
-  controls->layout()->addWidget(noiseSpinBox);
-  noiseSpinBox->setHidden(true);
-
-  applyNoiseButton = new QPushButton(tr("Apply Noise"));
-  controls->layout()->addWidget(applyNoiseButton);
-  applyNoiseButton->setHidden(true);
-
-  updateNormalsButton = new QPushButton(tr("Update Normals"));
-  controls->layout()->addWidget(updateNormalsButton);
-  updateNormalsButton->setHidden(true);
-
-  bilateralFilteringSpinBox = new QSpinBox();
-  bilateralFilteringSpinBox->setMinimum(1);
-  bilateralFilteringSpinBox->setMaximum(20);
-  bilateralFilteringSpinBox->setPrefix("Iterations: ");
-  controls->layout()->addWidget(bilateralFilteringSpinBox);
-  bilateralFilteringSpinBox->setHidden(true);
-
-  radiusSpinBox  = new QDoubleSpinBox();
-  radiusSpinBox ->setMinimum(0.001);
-  radiusSpinBox ->setMaximum(10.00);
-  radiusSpinBox->setSingleStep(0.001);
-  radiusSpinBox->setDecimals(4);
-
-  radiusSpinBox ->setPrefix("Radius: ");
-  controls->layout()->addWidget(radiusSpinBox );
-  radiusSpinBox ->setHidden(true);
-
-  standardDeviationSpinBox  = new QDoubleSpinBox();
-  standardDeviationSpinBox ->setMinimum(0.001);
-  standardDeviationSpinBox ->setMaximum(1.000);
-  standardDeviationSpinBox->setSingleStep(0.001);
-  standardDeviationSpinBox->setDecimals(4);
-  standardDeviationSpinBox ->setPrefix("SD: ");
-  controls->layout()->addWidget(standardDeviationSpinBox );
-  standardDeviationSpinBox ->setHidden(true);
-
-
-  bilateralFilteringButton = new QPushButton(tr("Apply Filter"));
-  controls->layout()->addWidget(bilateralFilteringButton);
-  bilateralFilteringButton->setHidden(true);
-  
-  extendedBilateralFilteringButton = new QPushButton(tr("Apply Extended Filter"));
-  controls->layout()->addWidget(extendedBilateralFilteringButton);
-  extendedBilateralFilteringButton->setHidden(true);
-
-  //meshes = createDialog(tr("Meshes"));
-  //meshes->setHidden(true);
-
- 
   //QWidget *widgets[] = { meshes, controls, examples  };
   QWidget *widgets[] = { controls };
 
@@ -300,23 +242,11 @@ SceneT<M>::loadMesh(const QString filePath)
 
     models.push_back(new QtModelT<M>(m_mymesh));
 
-    //if(!models.back()->hasColour())
-      //models.back()->updateColour(models.size());
-
     switch(models.size())
     {
       case 1:
         removeModelButton->setHidden(false);
-        //meshes->setHidden(false);
-        //noiseSpinBox->setHidden(false);
-        //applyNoiseButton->setHidden(false);
-        //groupBox->setHidden(false);
-        //updateNormalsButton->setHidden(false);
-        //bilateralFilteringSpinBox->setHidden(false);
-        //bilateralFilteringButton->setHidden(false);
-        //extendedBilateralFilteringButton->setHidden(false);
-        //radiusSpinBox->setHidden(false);
-        //standardDeviationSpinBox->setHidden(false);
+        groupBox->setHidden(false);
         break;
       case 2:
         radio3->setHidden(false);
