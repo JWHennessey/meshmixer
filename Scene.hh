@@ -21,10 +21,7 @@ public:
     {
       connect(m_modelButton, SIGNAL(clicked()), this, SLOT(selectMesh()));
       connect(removeModelButton, SIGNAL(clicked()), this, SLOT(removeMesh()));
-      connect(applyNoiseButton, SIGNAL(clicked()), this, SLOT(applyNoiseSlot()));
-      connect(updateNormalsButton, SIGNAL(clicked()), this, SLOT(updateNormalsSlot()));
-      connect(bilateralFilteringButton, SIGNAL(clicked()), this, SLOT(applyBilateralFilteringSlot()));
-      connect(extendedBilateralFilteringButton, SIGNAL(clicked()), this, SLOT(applyExtendedBilateralFilteringSlot()));
+
     }
 public slots:
     void selectMesh()
@@ -37,25 +34,7 @@ public slots:
     models.erase(models.begin());
   }
 
-    void applyNoiseSlot()
-    {
-      applyNoise();
-    }
 
-    void updateNormalsSlot()
-    {
-      updateNormals();
-    }
-
-    void applyBilateralFilteringSlot()
-    {
-      applyBilateralFiltering();
-    }
-
-    void applyExtendedBilateralFilteringSlot()
-    {
-      applyExtendedBilateralFiltering();
-    }
 
 };
 #endif

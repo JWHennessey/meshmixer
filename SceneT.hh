@@ -52,10 +52,6 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
     void keyPressEvent( QKeyEvent* event);
-    void applyNoise();
-    void updateNormals();
-    void applyBilateralFiltering();
-    void applyExtendedBilateralFiltering();
 
 private:
     QDialog *createDialog(const QString &windowTitle) const;

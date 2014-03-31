@@ -209,25 +209,6 @@ SceneT<M>::setDefaultLight(void)
 
 template <typename M>
 void
-SceneT<M>::applyNoise()
-{
-    std::cout << "Apply Noise" << "\n";
-    const int radioId = whichRadioButton();
-    if(radioId  == 1)
-    {
-      for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != models.size(); i++) {
-        models[i]->addNoise(noiseSpinBox->value());
-      }
-    }
-    else
-    {
-      models[radioId-2]->addNoise(noiseSpinBox->value());
-    }
-  updateGTDistances();
-}
-
-template <typename M>
-void
 SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
 {
   //std::cout << "Draw Foreground" << "\n";
@@ -322,21 +303,20 @@ SceneT<M>::loadMesh(const QString filePath)
     //if(!models.back()->hasColour())
       //models.back()->updateColour(models.size());
 
-    updateGTDistances();
     switch(models.size())
     {
       case 1:
         removeModelButton->setHidden(false);
         //meshes->setHidden(false);
-        noiseSpinBox->setHidden(false);
-        applyNoiseButton->setHidden(false);
-        groupBox->setHidden(false);
-        updateNormalsButton->setHidden(false);
-        bilateralFilteringSpinBox->setHidden(false);
-        bilateralFilteringButton->setHidden(false);
-        extendedBilateralFilteringButton->setHidden(false);
-        radiusSpinBox->setHidden(false);
-        standardDeviationSpinBox->setHidden(false);
+        //noiseSpinBox->setHidden(false);
+        //applyNoiseButton->setHidden(false);
+        //groupBox->setHidden(false);
+        //updateNormalsButton->setHidden(false);
+        //bilateralFilteringSpinBox->setHidden(false);
+        //bilateralFilteringButton->setHidden(false);
+        //extendedBilateralFilteringButton->setHidden(false);
+        //radiusSpinBox->setHidden(false);
+        //standardDeviationSpinBox->setHidden(false);
         break;
       case 2:
         radio3->setHidden(false);
@@ -496,110 +476,7 @@ SceneT<M>::whichRadioButton()
     return 0;
 }
 
-template <typename M>
-void
-SceneT<M>::updateNormals()
-{
-  const int radioId = whichRadioButton();
-  if(radioId  == 1)
-  {
-    for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != models.size(); i++) {
-        models[i]->calcNormals();
-    }
-  }
-  else
-  {
-    models[radioId-2]->calcNormals();
-  }
-  updateGTDistances();
-}
-
-template <typename M>
-void
-SceneT<M>::applyBilateralFiltering()
-{
-  const int radioId = whichRadioButton();
-  for(int i = 0; i < bilateralFilteringSpinBox->value(); i++)
-  {
-    
-    if(radioId  == 1)
-    {
-      for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != models.size(); i++) {
-          models[i]->bilateralFiltering(radiusSpinBox->value(),standardDeviationSpinBox->value());
-      }
-    }
-    else
-    {
-      //standardDeviationSpinBox->value()
-      //radiusSpinBox->value()
-      models[radioId-2]->bilateralFiltering(radiusSpinBox->value(),standardDeviationSpinBox->value());
-    }
-
-  }
-  updateGTDistances();
-}
 
 
-template <typename M>
-void
-SceneT<M>::applyExtendedBilateralFiltering()
-{
-  const int radioId = whichRadioButton();
-  for(int i = 0; i < bilateralFilteringSpinBox->value(); i++)
-  {
-    
-    if(radioId  == 1)
-    {
-      for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != models.size(); i++) {
-          models[i]->extendedBilateralFiltering(radiusSpinBox->value(),standardDeviationSpinBox->value());
-      }
-    }
-    else
-    {
-      //standardDeviationSpinBox->value()
-      //radiusSpinBox->value()
-      models[radioId-2]->extendedBilateralFiltering(radiusSpinBox->value(),standardDeviationSpinBox->value());
-    }
-
-  }
-  updateGTDistances();
-}
-
-template <typename M>
-void
-SceneT<M>::updateGTDistances()
-{
-  if (models.size() > 0)
-  {
-    std::stringstream sstm;
-    sstm << "M1 (" << models[0]->gt_distance << ", " << models[0]->FaceNormalErrorCalc() << ")";
-    radio2->setText(QString::fromStdString(sstm.str()));
-  }
-  if (models.size() > 1)
-  {
-    std::stringstream sstm;
-    sstm << "M2 (" << models[1]->gt_distance << ")";
-    radio2->setText(QString::fromStdString(sstm.str()));
-  }
-  if (models.size() > 2)
-  {
-    std::stringstream sstm;
-    sstm << "M3 (" << models[2]->gt_distance << ")";
-    radio2->setText(QString::fromStdString(sstm.str()));
-  }
-  if (models.size() > 3)
-  {
-    std::stringstream sstm;
-    sstm << "M4 (" << models[3]->gt_distance << ")";
-    radio2->setText(QString::fromStdString(sstm.str()));
-  }
-  if (models.size() > 4)
-  {
-    std::stringstream sstm;
-    sstm << "M5 (" << models[4]->gt_distance << ")";
-    radio2->setText(QString::fromStdString(sstm.str()));
-  }
-
-}
 
 #endif

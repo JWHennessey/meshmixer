@@ -7,7 +7,7 @@ include_directories (
   ${QT_INCLUDE_DIR}
 )
 
-set (targetName bilateral_denoising)
+set (targetName meshmixer)
 
 # source code directories
 set (directories 

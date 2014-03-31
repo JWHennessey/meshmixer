@@ -31,8 +31,6 @@ public:
 
 public:
      M mesh;
-     M groundTruth;
-
     QtModelT(M& m);
     ~QtModelT();
     void render();
@@ -47,15 +45,7 @@ public:
     PointMatrix buildNormalMatrix();
     int getNoVerticies();
     void updateTransformations(Matrix<double, 3, 3>& R, double x, double y, double z);
-    void addNoise(double sigma);
-    void mergeColours(QtModelT<M>* m2);
-    void bilateralFiltering(double sigc, double sigs);
-    void extendedBilateralFiltering(double sigc, double sigs);
     void nearestNeighbours(double radius, MapTable* resultTable);
-    //void renderBackBuffer();
-    void getDistFromGroundTruth();
-    float gt_distance;
-    float FaceNormalErrorCalc();
 
 private:
     QVector3D modelRotation;
@@ -64,12 +54,7 @@ private:
     GLfloat horizontal;
     GLfloat depth;
     const float deg2Rad;
-    float calcMeshAreaGT();
-    float calcMeshArea();
-    float faceArea(typename M::ConstFaceVertexIter fvIt);
-    float pointFaceDist(typename M::ConstFaceVertexIter f, Point p);
-    float sign(float i);
-    bool  pointInsideTraingle(Point *a, Point *b, Point *c, Point p);
+
 
 
 };
