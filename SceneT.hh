@@ -54,7 +54,7 @@ private:
     void setDefaultLight();
     void updateGTDistances();
     void removeRadio(int radioId);
-
+    bool mouseTranslate();
     MyMesh m_mymesh;
     QColor m_backgroundColor;
     OpenMesh::IO::Options _options;
@@ -84,6 +84,10 @@ private:
     QRadioButton* radio9;
     QRadioButton* radio10;
     QRadioButton* radio11;
+    QGroupBox* mouseControlBox;
+    QRadioButton* translateRadio;
+    QRadioButton* rotateRadio;
+
 
 };
 
