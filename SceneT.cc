@@ -348,7 +348,7 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     if(mouseTranslate())
     {
       if(radioId  == 1){
-        std::cout << m_distance << "\n";
+        //std::cout << m_distance << "\n";
         m_vertical -= delta.y() * (TANSLATE_SPEED);
         m_horizontal += delta.x() * (TANSLATE_SPEED);
       }
