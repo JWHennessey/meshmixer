@@ -54,7 +54,7 @@ QtModelT<M>::QtModelT(M& m)
       max_z = mesh.point(*v_it)[2];
 
   }
-  
+
   double diff, min;
   double diffX = max_x - min_x;
   double diffY = max_y - min_x;
@@ -385,6 +385,16 @@ QtModelT<M>::nearestNeighbours(double radius, MapTable* resultTable)
   std::cout << resultTable->size() << "\n";
 }
 
+template<typename M>
+void
+QtModelT<M>::scale(float alpha)
+{
+  typedef typename M::Point Point;
+  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
+  {
+    mesh.set_point( *v_it, Point(alpha*mesh.point(*v_it)));
+  }
 
+}
 
 #endif

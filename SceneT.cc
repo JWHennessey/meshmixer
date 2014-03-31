@@ -329,8 +329,16 @@ SceneT<M>::wheelEvent(QGraphicsSceneWheelEvent *event)
   if (event->isAccepted())
     return;
 
-  m_distance *= qPow(1.2, -event->delta() / 120.);
-  //std::cout << m_distance << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId == 1)
+  {
+    m_distance *= qPow(1.2, -event->delta() / 120.);
+    //std::cout << m_distance << "\n";
+  }
+  else
+  {
+    models[radioId-2]->scale(qPow(1.2, -event->delta() / 120.));
+  }
   event->accept();
   update();
 }
