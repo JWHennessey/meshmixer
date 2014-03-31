@@ -23,7 +23,7 @@ class SceneT : public QGraphicsScene
 {
 public:
   typedef M MyMesh;
-  std::vector<QtModelT<M>*> models;
+  QtModelT<M>* models [10];
 
 public:
     SceneT();
@@ -44,13 +44,16 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
     void keyPressEvent( QKeyEvent* event);
+    void removeMesh();
 
 private:
+    int modelCount;
     QDialog *createDialog(const QString &windowTitle) const;
     int whichRadioButton();
     void setDefaultMaterial();
     void setDefaultLight();
     void updateGTDistances();
+    void removeRadio(int radioId);
 
     MyMesh m_mymesh;
     QColor m_backgroundColor;
@@ -76,6 +79,11 @@ private:
     QRadioButton* radio4;
     QRadioButton* radio5;
     QRadioButton* radio6;
+    QRadioButton* radio7;
+    QRadioButton* radio8;
+    QRadioButton* radio9;
+    QRadioButton* radio10;
+    QRadioButton* radio11;
 
 };
 

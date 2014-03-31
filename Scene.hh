@@ -20,7 +20,7 @@ public:
     Scene() : SceneT<MyMesh>()
     {
       connect(m_modelButton, SIGNAL(clicked()), this, SLOT(selectMesh()));
-      connect(removeModelButton, SIGNAL(clicked()), this, SLOT(removeMesh()));
+      connect(removeModelButton, SIGNAL(clicked()), this, SLOT(removeMeshSlot()));
 
     }
 public slots:
@@ -29,10 +29,9 @@ public slots:
       QString selfilter = tr("Meshes (*.stl *.obj)");
       loadMesh(QFileDialog::getOpenFileName(0, tr("Choose mesh"), QString(), tr("All files (*.*);;Meshes (*.stl *.obj)" ), &selfilter));
     }
-  
-  void removeMesh(){
-    models.erase(models.begin());
-  }
+    void removeMeshSlot(){
+      removeMesh();
+    }
 
 
 
