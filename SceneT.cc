@@ -37,9 +37,12 @@ SceneT<M>::SceneT()
 , m_horizontal(0.0f)
 , TANSLATE_SPEED(0.01f)
 {
-
+  modelCount = 0;
   QWidget *controls = createDialog(tr("Controls"));
-  
+
+  m_modelButton = new QPushButton(tr("Load model"));
+  controls->layout()->addWidget(m_modelButton);
+
   groupBox = new QGroupBox(tr("Select Mesh"));
   radio1 = new QRadioButton(tr("All"));
   radio2 = new QRadioButton(tr("M1"));
@@ -47,12 +50,23 @@ SceneT<M>::SceneT()
   radio4 = new QRadioButton(tr("M3"));
   radio5 = new QRadioButton(tr("M4"));
   radio6 = new QRadioButton(tr("M5"));
+  radio7 = new QRadioButton(tr("M6"));
+  radio8 = new QRadioButton(tr("M7"));
+  radio9 = new QRadioButton(tr("M8"));
+  radio10 = new QRadioButton(tr("M9"));
+  radio11 = new QRadioButton(tr("M10"));
+
   groupBox->setHidden(true);
   groupBox->setFocusPolicy(Qt::StrongFocus);
   radio3->setHidden(true);
   radio4->setHidden(true);
   radio5->setHidden(true);
   radio6->setHidden(true);
+  radio7->setHidden(true);
+  radio8->setHidden(true);
+  radio9->setHidden(true);
+  radio10->setHidden(true);
+  radio11->setHidden(true);
 
   radio1->setChecked(true);
   QVBoxLayout *vbox = new QVBoxLayout;
@@ -62,18 +76,31 @@ SceneT<M>::SceneT()
   vbox->addWidget(radio4);
   vbox->addWidget(radio5);
   vbox->addWidget(radio6);
-
+  vbox->addWidget(radio7);
+  vbox->addWidget(radio8);
+  vbox->addWidget(radio9);
+  vbox->addWidget(radio10);
+  vbox->addWidget(radio11);
   vbox->addStretch(1);
   groupBox->setLayout(vbox);
   controls->layout()->addWidget(groupBox);
 
-  m_modelButton = new QPushButton(tr("Load model"));
-  controls->layout()->addWidget(m_modelButton);
-
   removeModelButton = new QPushButton(tr("Remove model"));
   controls->layout()->addWidget(removeModelButton);
   removeModelButton->setHidden(true);
-  
+
+  mouseControlBox = new QGroupBox(tr("Mouse Control"));
+  mouseControlBox->setHidden(true);
+  translateRadio = new QRadioButton(tr("Translate"));
+  rotateRadio = new QRadioButton(tr("Rotate"));
+  translateRadio->setChecked(true);
+  QVBoxLayout *vb = new QVBoxLayout;
+  vb->addWidget(translateRadio);
+  vb->addWidget(rotateRadio);
+  vb->addStretch(1);
+  mouseControlBox->setLayout(vb);
+  controls->layout()->addWidget(mouseControlBox);
+
   //QWidget *widgets[] = { meshes, controls, examples  };
   QWidget *widgets[] = { controls };
 
@@ -146,19 +173,8 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
 {
   //std::cout << "Draw Foreground" << "\n";
   painter->beginNativePainting();
-  /*
-  if (clicked){
-    glSelectBuffer(65535, PickBuffer);
-    glRenderMode(GL_SELECT);
-    GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
-    gluPickMatrix(clickLocation.x(), (GLdouble)(viewport[3]-clickLocation.y()), 10, 10, viewport);
-    std::cout << clickLocation.x() << "\n";
-  } else {
-    glRenderMode(GL_RENDER);
-  }
-   */
-  if(models.size() > 0){
+
+  if(modelCount > 0){
     glSelectBuffer(65535, PickBuffer);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -184,9 +200,11 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
     glRotatef(m_rotation.z(), 0, 0, 1);
 
     glEnable(GL_MULTISAMPLE);
-      for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != models.size(); i++) {
+
+    for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != modelCount; i++) {
+      if(models[i] != NULL)
         models[i]->render();
-      }
+    }
     glDisable(GL_MULTISAMPLE);
 
     glPopMatrix();
@@ -226,27 +244,49 @@ SceneT<M>::loadMesh(const QString filePath)
   QApplication::setOverrideCursor(Qt::BusyCursor);
   if(OpenMesh::IO::read_mesh(m_mymesh, filePath.toStdString(), _options))
   {
-
-    models.push_back(new QtModelT<M>(m_mymesh));
-
-    switch(models.size())
+    if(modelCount > 9)
     {
-      case 1:
-        removeModelButton->setHidden(false);
-        groupBox->setHidden(false);
-        break;
-      case 2:
-        radio3->setHidden(false);
-        break;
-      case 3:
-        radio4->setHidden(false);
-        break;
-      case 4:
-        radio5->setHidden(false);
-        break;
-      case 5:
-        radio6->setHidden(false);
-        break;
+      std::cout << "Too Many Models. Please Remove All Models" << "\n";
+    }
+    else
+    {
+      models[modelCount] = new QtModelT<M>(m_mymesh);
+      modelCount++;
+      switch(modelCount)
+      {
+        case 1:
+          removeModelButton->setHidden(false);
+          groupBox->setHidden(false);
+          mouseControlBox->setHidden(false);
+          break;
+        case 2:
+          radio3->setHidden(false);
+          break;
+        case 3:
+          radio4->setHidden(false);
+          break;
+        case 4:
+          radio5->setHidden(false);
+          break;
+        case 5:
+          radio6->setHidden(false);
+          break;
+        case 6:
+          radio7->setHidden(false);
+          break;
+        case 7:
+          radio8->setHidden(false);
+          break;
+        case 8:
+          radio9->setHidden(false);
+          break;
+        case 9:
+          radio10->setHidden(false);
+          break;
+        case 10:
+          radio11->setHidden(false);
+          break;
+      }
     }
 
     //std::clog << m_mymesh.n_vertices() << " vertices, "
@@ -271,8 +311,16 @@ SceneT<M>::wheelEvent(QGraphicsSceneWheelEvent *event)
   if (event->isAccepted())
     return;
 
-  m_distance *= qPow(1.2, -event->delta() / 120.);
-  //std::cout << m_distance << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId == 1)
+  {
+    m_distance *= qPow(1.2, -event->delta() / 120.);
+    //std::cout << m_distance << "\n";
+  }
+  else
+  {
+    models[radioId-2]->scale(qPow(1.2, -event->delta() / 120.));
+  }
   event->accept();
   update();
 }
@@ -286,15 +334,30 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     return;
   if (event->buttons() & Qt::LeftButton) {
     const QPointF delta = event->scenePos() - event->lastScenePos();
-    QVector3D angularImpulse = QVector3D(delta.y(), delta.x(), 0) * 0.1;
-    
     const int radioId = whichRadioButton();
-    if(radioId  == 1){
-      m_rotation += angularImpulse;
+    if(mouseTranslate())
+    {
+      if(radioId  == 1){
+        //std::cout << m_distance << "\n";
+        m_vertical -= delta.y() * (TANSLATE_SPEED);
+        m_horizontal += delta.x() * (TANSLATE_SPEED);
+      }
+      else
+      {
+        models[radioId-2]->updateVertical(delta.y() * -TANSLATE_SPEED);
+        models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
+      }
     }
     else
     {
-      models[radioId-2]->updateRotation(angularImpulse);
+      QVector3D angularImpulse = QVector3D(delta.y(), delta.x(), 0) * 0.1;
+      if(radioId  == 1){
+        m_rotation += angularImpulse;
+      }
+      else
+      {
+        models[radioId-2]->updateRotation(angularImpulse);
+      }
     }
     event->accept();
     update();
@@ -442,11 +505,117 @@ SceneT<M>::whichRadioButton()
     return 5;
   else if(radio6->isChecked())
     return 6;
+  else if(radio7->isChecked())
+    return 7;
+  else if(radio8->isChecked())
+    return 8;
+  else if(radio9->isChecked())
+    return 9;
+  else if(radio10->isChecked())
+    return 10;
+  else if(radio11->isChecked())
+    return 11;
   else
     return 0;
 }
 
+template <typename M>
+void
+SceneT<M>::removeMesh()
+{
+  const int radioId = whichRadioButton();
+  if(radioId  == 1)
+  {
+
+    for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != modelCount; i++) {
+        models[i] = NULL;
+    }
+    modelCount = 0;
+    removeModelButton->setHidden(true);
+    groupBox->setHidden(true);
+    mouseControlBox->setHidden(true);
+    radio3->setHidden(true);
+    radio4->setHidden(true);
+    radio5->setHidden(true);
+    radio6->setHidden(true);
+    radio7->setHidden(true);
+    radio8->setHidden(true);
+    radio9->setHidden(true);
+    radio10->setHidden(true);
+    radio11->setHidden(true);
+  }
+  else
+  {
+    models[radioId-2] = NULL;
+    removeRadio(radioId);
+    bool clear = true;
+    for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != modelCount; i++) {
+      if(models[i] != NULL)
+        clear = false;
+    }
+
+    if(clear){
+      removeModelButton->setHidden(true);
+      groupBox->setHidden(true);
+      mouseControlBox->setHidden(true);
+      radio2->setHidden(false);
+      modelCount = 0;
+    }
+  }
+
+}
+
+template <typename M>
+void
+SceneT<M>::removeRadio(int radioId)
+{
+  switch(radioId)
+  {
+    case 2:
+      radio2->setHidden(true);
+      break;
+    case 3:
+      radio3->setHidden(true);
+      break;
+    case 4:
+      radio4->setHidden(true);
+      break;
+    case 5:
+      radio5->setHidden(true);
+      break;
+    case 6:
+      radio6->setHidden(true);
+      break;
+    case 7:
+      radio7->setHidden(true);
+      break;
+    case 8:
+      radio8->setHidden(true);
+      break;
+    case 9:
+      radio9->setHidden(true);
+      break;
+    case 10:
+      radio10->setHidden(true);
+      break;
+    case 11:
+      radio11->setHidden(true);
+      break;
+
+  }
+  radio1->setChecked(true);
+
+}
 
 
+template <typename M>
+bool
+SceneT<M>::mouseTranslate()
+{
+  if(translateRadio->isChecked())
+    return true;
+  else
+    return false;
+}
 
 #endif

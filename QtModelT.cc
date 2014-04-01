@@ -24,8 +24,6 @@ QtModelT<M>::QtModelT(M& m)
 {
   mesh = m;
 
-  calcNormals();
-
   double min_x, max_x, min_y, max_y, min_z, max_z;
   bool first = true;
   for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
@@ -47,7 +45,7 @@ QtModelT<M>::QtModelT(M& m)
 
     if(mesh.point(*v_it)[1] < min_y )
       min_y = mesh.point(*v_it)[1];
-    else if(mesh.point(*v_it)[1] > max_y )
+    else if(mesh.point(*v_it)[0] > max_y )
       max_y = mesh.point(*v_it)[1];
 
     if(mesh.point(*v_it)[2] < min_z )
@@ -56,16 +54,38 @@ QtModelT<M>::QtModelT(M& m)
       max_z = mesh.point(*v_it)[2];
 
   }
+
+  double diff, min;
+  double diffX = max_x - min_x;
+  double diffY = max_y - min_x;
+  double diffZ = max_z - min_x;
+
+  if(diffX > diffY && diffX > diffZ)
+  {
+    diff = diffX;
+    min = min_x;
+  }
+  else if(diffY > diffX && diffY > diffZ)
+  {
+    diff = diffY;
+    min = min_y;
+  }
+  else
+  {
+    diff = diffZ;
+    min = min_z;
+  }
+
+
   typedef typename M::Point Point;
   for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
   {
     mesh.set_point( *v_it, Point(
-          2.0*(mesh.point(*v_it)[0]-min_x)/(max_x-min_x) - 1.0,
-          2.0*(mesh.point(*v_it)[1]-min_y)/(max_y-min_y) - 1.0,
-          2.0*(mesh.point(*v_it)[2]-min_z)/(max_z-min_z) - 1.0)
+          2.0*(mesh.point(*v_it)[0]-min)/(diff) - 1.0,
+          2.0*(mesh.point(*v_it)[1]-min)/(diff) - 1.0,
+          2.0*(mesh.point(*v_it)[2]-min)/(diff) - 1.0)
     );
   }
-
 
   updateColour();
   calcNormals();
@@ -107,7 +127,7 @@ QtModelT<M>::render()
     glEnable(GL_DEPTH_TEST);
     glEnableClientState(GL_VERTEX_ARRAY);
   
-    unsigned int index = 9;
+    unsigned int index = 0;
     for (; fIt!=fEnd; ++fIt)
     {
         glLoadName(index);
@@ -365,7 +385,7 @@ QtModelT<M>::nearestNeighbours(double radius, MapTable* resultTable)
 
     std::vector< std::pair< size_t, double > > resultPairs;
     resultPairs.reserve(mesh.n_vertices());
-    
+
     size_t count = mat_index.index->radiusSearch(&query_pt[0], radius, resultPairs, nanoflann::SearchParams(true));
     std::cout << resultPairs.size() << "\n";
     resultTable->push_back(resultPairs);
@@ -374,6 +394,16 @@ QtModelT<M>::nearestNeighbours(double radius, MapTable* resultTable)
   std::cout << resultTable->size() << "\n";
 }
 
+template<typename M>
+void
+QtModelT<M>::scale(float alpha)
+{
+  typedef typename M::Point Point;
+  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
+  {
+    mesh.set_point( *v_it, Point(alpha*mesh.point(*v_it)));
+  }
 
+}
 
 #endif
