@@ -334,6 +334,7 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
   if (event->buttons() & Qt::LeftButton) {
     const QPointF delta = event->scenePos() - event->lastScenePos();
     const int radioId = whichRadioButton();
+    QVector3D angularImpulse = QVector3D(delta.y(), delta.x(), 0) * 0.1;
     if(mouseTranslate())
     {
       if(radioId  == 1){
@@ -343,13 +344,14 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
       }
       else
       {
-        models[radioId-2]->updateVertical(delta.y() * -TANSLATE_SPEED);
+        //delta = R * delta;
+        models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
         models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
       }
     }
     else
     {
-      QVector3D angularImpulse = QVector3D(delta.y(), delta.x(), 0) * 0.1;
+      
       if(radioId  == 1){
         m_rotation += angularImpulse;
       }
@@ -533,6 +535,7 @@ SceneT<M>::removeMesh()
     removeModelButton->setHidden(true);
     groupBox->setHidden(true);
     mouseControlBox->setHidden(true);
+    radio2->setHidden(false);
     radio3->setHidden(true);
     radio4->setHidden(true);
     radio5->setHidden(true);

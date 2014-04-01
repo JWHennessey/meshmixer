@@ -21,6 +21,7 @@ QtModelT<M>::QtModelT(M& m)
   , horizontal(0.0f)
   , depth(0.0f)
   , deg2Rad(0.0174532925)
+  , zAxis(0.0f)
 {
   mesh = m;
 
@@ -115,8 +116,10 @@ QtModelT<M>::render()
     typename M::ConstFaceVertexIter fvIt;
 
     //std::cout << "Render" << "\n";
+    //std::cout << horizontal << "\n";
+    //std::cout << vertical << "\n";
     glPushMatrix();
-    glTranslatef(horizontal, vertical, 0);
+    glTranslatef(horizontal, vertical, zAxis);
     glRotatef(modelRotation.x(), 1, 0, 0);
     glRotatef(modelRotation.y(), 0, 1, 0);
     glRotatef(modelRotation.z(), 0, 0, 1);
@@ -279,7 +282,14 @@ template <typename M>
 void
 QtModelT<M>::updateVertical(float x)
 {
-  vertical += x;
+  vertical -= x;
+}
+
+template <typename M>
+void
+QtModelT<M>::updateZAxis(float x)
+{
+  zAxis += x;
 }
 
 template <typename M>

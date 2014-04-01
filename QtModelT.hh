@@ -40,6 +40,7 @@ public:
     void updateRotation(QVector3D& rotationVec);
     void updateHorizontal(float x);
     void updateVertical(float x);
+    void updateZAxis(float x);
     void applyTransformations();
     M* getMesh(){ return &mesh; }
     PointMatrix buildMatrix();
@@ -57,6 +58,7 @@ private:
     GLfloat vertical;
     GLfloat horizontal;
     GLfloat depth;
+    GLfloat zAxis;
     const float deg2Rad;
 
 
