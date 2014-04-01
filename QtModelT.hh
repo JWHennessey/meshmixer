@@ -27,13 +27,15 @@ public:
     typedef std::vector<std::vector< std::pair< size_t, double > > > MapTable;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
     QRectF boundingRect() const;
+    int number;
     void calcNormals();
 
 public:
-     M mesh;
+    M mesh;
     QtModelT(M& m);
     ~QtModelT();
     void render();
+    void select(int faceNumber);
     void updateColour();
     void updateRotation(QVector3D& rotationVec);
     void updateHorizontal(float x);

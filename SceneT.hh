@@ -24,7 +24,7 @@ class SceneT : public QGraphicsScene
 public:
   typedef M MyMesh;
   std::vector<QtModelT<M>*> models;
-
+  
 public:
     SceneT();
     void drawBackground(QPainter *painter, const QRectF &rect);
@@ -44,6 +44,9 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
     void keyPressEvent( QKeyEvent* event);
+    GLuint PickBuffer[65535];
+    bool clicked;
+    QPointF clickLocation;
 
 private:
     QDialog *createDialog(const QString &windowTitle) const;

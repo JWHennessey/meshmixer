@@ -80,6 +80,13 @@ QtModelT<M>::~QtModelT()
 
 template <typename M>
 void
+QtModelT<M>::select(int faceNumber){
+  typename M::FaceHandle face = mesh.face_handle(faceNumber);
+  mesh.set_color(face, typename M::Color(255,255,255));
+}
+
+template <typename M>
+void
 QtModelT<M>::render()
 {
     typename M::ConstFaceIter    fIt(mesh.faces_begin()),
@@ -99,21 +106,22 @@ QtModelT<M>::render()
 
     glEnable(GL_DEPTH_TEST);
     glEnableClientState(GL_VERTEX_ARRAY);
-
-    glBegin(GL_TRIANGLES);
+  
+    unsigned int index = 9;
     for (; fIt!=fEnd; ++fIt)
     {
-
+        glLoadName(index);
+        glBegin(GL_TRIANGLES);
         glNormal3fv( &mesh.normal(*fIt)[0] );
-
         fvIt = mesh.cfv_iter(*fIt);
         glVertex3fv( &mesh.point(*fvIt)[0] );
         ++fvIt;
         glVertex3fv( &mesh.point(*fvIt)[0] );
         ++fvIt;
         glVertex3fv( &mesh.point(*fvIt)[0] );
+        glEnd();
+        index++;
      }
-     glEnd();
 
     //glBegin(GL_LINES);
     //glLineWidth(2.0f);

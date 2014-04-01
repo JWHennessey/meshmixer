@@ -38,14 +38,6 @@ SceneT<M>::SceneT()
 , TANSLATE_SPEED(0.01f)
 {
 
-  //QWidget *examples = createDialog(tr("Examples"));
-  //m_ex1Button = new QPushButton(tr("Example 1 (ToDo)"));
-  //examples->layout()->addWidget(m_ex1Button );
-  //m_ex2Button= new QPushButton(tr("Example 2 (ToDo)"));
-  //examples->layout()->addWidget(m_ex2Button);
-  //m_ex3Button = new QPushButton(tr("Example 3 (ToDo)"));
-  //examples->layout()->addWidget(m_ex3Button );
-
   QWidget *controls = createDialog(tr("Controls"));
   
   groupBox = new QGroupBox(tr("Select Mesh"));
@@ -99,7 +91,6 @@ SceneT<M>::SceneT()
     item->setPos(pos.x() - rect.x(), pos.y() - rect.y());
     pos += QPointF(0, 10 + rect.height());
   }
-
 }
 
 template <typename M>
@@ -155,12 +146,25 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
 {
   //std::cout << "Draw Foreground" << "\n";
   painter->beginNativePainting();
-
+  /*
+  if (clicked){
+    glSelectBuffer(65535, PickBuffer);
+    glRenderMode(GL_SELECT);
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    gluPickMatrix(clickLocation.x(), (GLdouble)(viewport[3]-clickLocation.y()), 10, 10, viewport);
+    std::cout << clickLocation.x() << "\n";
+  } else {
+    glRenderMode(GL_RENDER);
+  }
+   */
   if(models.size() > 0){
+    glSelectBuffer(65535, PickBuffer);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
 
     glLoadIdentity();
+    
     gluPerspective(70, width() / height(), 0.01, 1000);
 
     glMatrixMode(GL_MODELVIEW);
@@ -173,32 +177,16 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
     glEnable(GL_LIGHTING);
     glShadeModel(GL_FLAT);
     //glutSolidTeapot(0.5);
-
+    
     glTranslatef(m_horizontal, m_vertical, -m_distance);
     glRotatef(m_rotation.x(), 1, 0, 0);
     glRotatef(m_rotation.y(), 0, 1, 0);
     glRotatef(m_rotation.z(), 0, 0, 1);
 
     glEnable(GL_MULTISAMPLE);
-
-
-    //const int radioId = whichRadioButton();
-    //if (radioId == 1)
-    //{
-
       for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != models.size(); i++) {
         models[i]->render();
       }
-
-    //}
-    //else
-    //{
-      //glDisable(GL_LIGHTING);
-      //glDisable(GL_TEXTURE_2D);
-      //models[radioId-2]->renderBackBuffer();
-
-    //}
-
     glDisable(GL_MULTISAMPLE);
 
     glPopMatrix();
@@ -206,8 +194,7 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
   }
-
-  painter->endNativePainting();
+  //painter->endNativePainting();
 }
 
 template <typename M>
@@ -280,7 +267,6 @@ template <typename M>
 void
 SceneT<M>::wheelEvent(QGraphicsSceneWheelEvent *event)
 {
-
   QGraphicsScene::wheelEvent(event);
   if (event->isAccepted())
     return;
@@ -319,26 +305,80 @@ template <typename M>
 void
 SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
+  clickLocation = event->scenePos();
+  clicked = true;
   QGraphicsScene::mousePressEvent(event);
   if (event->isAccepted())
     return;
   m_mouseEventTime = m_time.elapsed();
-
-
-
   event->accept();
+  update();
 }
 
 template <typename M>
 void
 SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
+
+  //glInitNames();
+  //glPushName(0);
+  if(models.size() > 0){
+    glRenderMode(GL_SELECT);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 1, 1, viewport);
+    gluPerspective(70, width() / height(), 0.01, 1000);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    glTranslatef(m_horizontal, m_vertical, -m_distance);
+    glRotatef(m_rotation.x(), 1, 0, 0);
+    glRotatef(m_rotation.y(), 0, 1, 0);
+    glRotatef(m_rotation.z(), 0, 0, 1);
+    
+    glEnable(GL_MULTISAMPLE);
+    glInitNames();
+    glPushName( 0xffffffff );
+    for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != models.size(); i++) {
+      models[i]->render();
+    }
+    
+    glDisable(GL_MULTISAMPLE);
+    
+    glPopMatrix();
+    
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+  }
+  GLuint Nhits = glRenderMode(GL_RENDER);
+  clicked == false;
+  std::cout << Nhits << " y\n";
+  if (Nhits > 0){
+    GLuint item;
+    GLuint front;
+    for(size_t i = 0, index = 0; i < Nhits; i++ )
+    {
+      GLuint nitems = PickBuffer[index++];
+      index+= 2;
+      for(size_t j = 0; j < nitems; j++ )
+      {
+        item = PickBuffer[index++];
+        std::cout << Nhits << " z" << item << " \n";
+      }
+      models[0]->select(item);
+    }
+  } else {
   QGraphicsScene::mouseReleaseEvent(event);
   if (event->isAccepted())
     return;
   const int delta = m_time.elapsed() - m_mouseEventTime;
   event->accept();
   update();
+  }
 }
 
 template <typename M>
