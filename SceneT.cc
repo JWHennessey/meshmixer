@@ -201,9 +201,8 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
 
     glEnable(GL_MULTISAMPLE);
 
-    for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != modelCount; i++) {
-      if(models[i] != NULL)
-        models[i]->render();
+    for (int i = 0; i != modelCount; i++) {
+      if(models[i] != NULL) models[i]->render();
     }
     glDisable(GL_MULTISAMPLE);
 
@@ -385,7 +384,7 @@ SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
   //glInitNames();
   //glPushName(0);
-  if(models.size() > 0){
+  if(modelCount > 0){
     glRenderMode(GL_SELECT);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -406,8 +405,8 @@ SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     glEnable(GL_MULTISAMPLE);
     glInitNames();
     glPushName( 0xffffffff );
-    for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != models.size(); i++) {
-      models[i]->render();
+    for (int i = 0; i != modelCount; i++) {
+      if (models[i] != NULL) models[i]->render();
     }
     
     glDisable(GL_MULTISAMPLE);
@@ -527,7 +526,7 @@ SceneT<M>::removeMesh()
   if(radioId  == 1)
   {
 
-    for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != modelCount; i++) {
+    for(int i = 0; i != modelCount; i++) {
         models[i] = NULL;
     }
     modelCount = 0;
