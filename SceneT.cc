@@ -432,9 +432,6 @@ template <typename M>
 void
 SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-
-  //glInitNames();
-  //glPushName(0);
   if(modelCount > 0){
     glRenderMode(GL_SELECT);
     glMatrixMode(GL_PROJECTION);

@@ -114,7 +114,7 @@ QtModelT<M>::render()
                                  fEnd(mesh.faces_end());
 
     typename M::ConstFaceVertexIter fvIt;
-
+    unsigned int index = 0;
     //std::cout << "Render" << "\n";
     //std::cout << horizontal << "\n";
     //std::cout << vertical << "\n";
@@ -124,13 +124,37 @@ QtModelT<M>::render()
     //glRotatef(modelRotation.y(), 0, 1, 0);
     //glRotatef(modelRotation.z(), 0, 0, 1);
 
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glVertexPointer(3, GL_FLOAT, 0, mesh.points());
+  
+  glEnableClientState(GL_NORMAL_ARRAY);
+  glNormalPointer(GL_FLOAT, 0, mesh.vertex_normals());
+  
+
+  for (; fIt!=fEnd; ++fIt)
+  {
+    glBegin(GL_TRIANGLES);
+    glColor3fv(&mesh.color(*fIt)[0]);
+    fvIt = mesh.cfv_iter(*fIt);
+    glArrayElement(fvIt->idx());
+    ++fvIt;
+    glArrayElement(fvIt->idx());
+    ++fvIt;
+    glArrayElement(fvIt->idx());
+    glEnd();
+    index++;
+  }
+
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_NORMAL_ARRAY);
+  /*
     glEnable(GL_LIGHTING);
     glShadeModel(GL_FLAT);
 
     glEnable(GL_DEPTH_TEST);
     glEnableClientState(GL_VERTEX_ARRAY);
   
-    unsigned int index = 0;
+
     for (; fIt!=fEnd; ++fIt)
     {
         glLoadName(index);
@@ -145,7 +169,7 @@ QtModelT<M>::render()
         glEnd();
         index++;
      }
-
+*/
     //glBegin(GL_LINES);
     //glLineWidth(2.0f);
     //for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
