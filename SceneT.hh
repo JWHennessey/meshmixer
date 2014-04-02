@@ -12,7 +12,7 @@
 #include <OpenMesh/Core/Utils/color_cast.hh>
 #include <OpenMesh/Core/Mesh/Attributes.hh>
 #include <nanoflann.hpp>
-
+#include <eigen3/Eigen/Dense>
 
 using namespace Qt;
 using namespace OpenMesh;
@@ -72,6 +72,7 @@ private:
 
     QGraphicsRectItem *m_lightItem;
     const float TANSLATE_SPEED;
+    const float deg2Rad;
 
     QWidget *meshes;
     QGroupBox* groupBox;

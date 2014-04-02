@@ -10,7 +10,6 @@
 #include <QDoubleSpinBox>
 #include <OpenMesh/Core/Utils/vector_cast.hh>
 #include <OpenMesh/Tools/Utils/Timer.hh>
-
 #ifndef GL_MULTISAMPLE
 #define GL_MULTISAMPLE  0x809D
 #endif
@@ -36,6 +35,7 @@ SceneT<M>::SceneT()
 , m_vertical(-0.1f)
 , m_horizontal(0.0f)
 , TANSLATE_SPEED(0.01f)
+, deg2Rad(0.0174532925)
 {
   modelCount = 0;
   QWidget *controls = createDialog(tr("Controls"));
@@ -332,7 +332,7 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
   if (event->isAccepted())
     return;
   if (event->buttons() & Qt::LeftButton) {
-    const QPointF delta = event->scenePos() - event->lastScenePos();
+    QPointF delta = event->scenePos() - event->lastScenePos();
     const int radioId = whichRadioButton();
     QVector3D angularImpulse = QVector3D(delta.y(), delta.x(), 0) * 0.1;
     if(mouseTranslate())
@@ -344,9 +344,20 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
       }
       else
       {
+        typedef typename M::Point Point;
+        QVector3D modelRotation = m_rotation;
+        modelRotation = modelRotation * deg2Rad;
+        Eigen::AngleAxis<float> aax(modelRotation.x(), Eigen::Vector3f(1, 0, 0));
+        Eigen::AngleAxis<float> aay(modelRotation.y(), Eigen::Vector3f(0, 1, 0));
+        Eigen::AngleAxis<float> aaz(modelRotation.z(), Eigen::Vector3f(0, 0, 1));
+        Eigen::Quaternion<float> rotation = aax * aay * aaz;
+
+        Eigen::Vector3f p = Eigen::Vector3f(delta.x(), delta.y(), 0);
+        p = rotation * p;
         //delta = R * delta;
-        models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
-        models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
+        models[radioId-2]->updateHorizontal(p[0] * TANSLATE_SPEED);
+        models[radioId-2]->updateVertical(p[1] * TANSLATE_SPEED);
+        models[radioId-2]->updateZAxis(p[2] * TANSLATE_SPEED);
       }
     }
     else
@@ -354,6 +365,10 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
       
       if(radioId  == 1){
         m_rotation += angularImpulse;
+        //for (int i = 0; i != modelCount; i++) {
+          //if(models[i] != NULL) models[i]->updateRotation(angularImpulse);
+        //}
+
       }
       else
       {
@@ -473,10 +488,10 @@ SceneT<M>::keyPressEvent( QKeyEvent* event)
     switch(event->key())
     {
       case Key_Up:
-        models[radioId-2]->updateVertical(TANSLATE_SPEED);
+        models[radioId-2]->updateVertical(-TANSLATE_SPEED);
         break;
       case Key_Down:
-        models[radioId-2]->updateVertical(-TANSLATE_SPEED);
+        models[radioId-2]->updateVertical(TANSLATE_SPEED);
         break;
       case Key_Right:
         models[radioId-2]->updateHorizontal(TANSLATE_SPEED);
