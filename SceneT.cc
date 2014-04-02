@@ -101,6 +101,31 @@ SceneT<M>::SceneT()
   mouseControlBox->setLayout(vb);
   controls->layout()->addWidget(mouseControlBox);
 
+  removeModelButton = new QPushButton(tr("Remove model"));
+  controls->layout()->addWidget(removeModelButton);
+  removeModelButton->setHidden(true);
+
+  clearFacesButton = new QPushButton(tr("Clear Painted Faces"));
+  controls->layout()->addWidget(clearFacesButton);
+  clearFacesButton->setHidden(true);
+
+  cutButton = new QPushButton(tr("Cut"));
+  controls->layout()->addWidget(cutButton);
+  cutButton->setHidden(true);
+
+  copyButton = new QPushButton(tr("Copy"));
+  controls->layout()->addWidget(copyButton);
+  copyButton->setHidden(true);
+
+
+  pasteButton = new QPushButton(tr("Paste"));
+  controls->layout()->addWidget(pasteButton);
+  pasteButton->setHidden(true);
+
+  deleteButton = new QPushButton(tr("Delete"));
+  controls->layout()->addWidget(deleteButton);
+  deleteButton->setHidden(true);
+
   //QWidget *widgets[] = { meshes, controls, examples  };
   QWidget *widgets[] = { controls };
 
@@ -257,6 +282,11 @@ SceneT<M>::loadMesh(const QString filePath)
           removeModelButton->setHidden(false);
           groupBox->setHidden(false);
           mouseControlBox->setHidden(false);
+          clearFacesButton->setHidden(false);
+          cutButton->setHidden(false);
+          deleteButton->setHidden(false);
+          pasteButton->setHidden(false);
+          copyButton->setHidden(false);
           break;
         case 2:
           radio3->setHidden(false);
@@ -354,7 +384,7 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
         Eigen::Vector3f p = Eigen::Vector3f(delta.x(), delta.y(), 0);
         p = rotation * p;
-        delta = R * delta;
+        //delta = R * delta;
         models[radioId-2]->updateHorizontal(p[0] * TANSLATE_SPEED);
         models[radioId-2]->updateVertical(p[1] * TANSLATE_SPEED);
         models[radioId-2]->updateZAxis(p[2] * TANSLATE_SPEED);
@@ -564,6 +594,12 @@ SceneT<M>::removeMesh()
     radio9->setHidden(true);
     radio10->setHidden(true);
     radio11->setHidden(true);
+    clearFacesButton->setHidden(true);
+    cutButton->setHidden(true);
+    deleteButton->setHidden(true);
+    pasteButton->setHidden(true);
+    copyButton->setHidden(true);
+
   }
   else
   {
@@ -580,6 +616,11 @@ SceneT<M>::removeMesh()
       groupBox->setHidden(true);
       mouseControlBox->setHidden(true);
       radio2->setHidden(false);
+      clearFacesButton->setHidden(true);
+      cutButton->setHidden(true);
+      deleteButton->setHidden(true);
+      pasteButton->setHidden(true);
+      copyButton->setHidden(true);
       modelCount = 0;
     }
   }
@@ -637,6 +678,43 @@ SceneT<M>::mouseTranslate()
     return true;
   else
     return false;
+}
+
+
+template <typename M>
+void
+SceneT<M>::cut()
+{
+  std::cout << "Cut Pressesed" << "\n";
+}
+
+template <typename M>
+void
+SceneT<M>::paste()
+{
+  std::cout << "Paste Pressesed" << "\n";
+}
+
+template <typename M>
+void
+SceneT<M>::copy()
+{
+  std::cout << "Copy Pressesed" << "\n";
+}
+
+template <typename M>
+void
+SceneT<M>::clearFaces()
+{
+  std::cout << "Clear Faces Pressesed" << "\n";
+}
+
+
+template <typename M>
+void
+SceneT<M>::deleteSection()
+{
+  std::cout << "Delete Pressesed" << "\n";
 }
 
 #endif

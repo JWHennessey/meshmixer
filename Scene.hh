@@ -16,11 +16,17 @@ class Scene : public SceneT<MyMesh>
 {
   Q_OBJECT
 public:
+
     /// default constructor
     Scene() : SceneT<MyMesh>()
     {
       connect(m_modelButton, SIGNAL(clicked()), this, SLOT(selectMesh()));
       connect(removeModelButton, SIGNAL(clicked()), this, SLOT(removeMeshSlot()));
+      connect(clearFacesButton, SIGNAL(clicked()), this, SLOT(clearFacesSlot()));
+      connect(cutButton, SIGNAL(clicked()), this, SLOT(cutSlot()));
+      connect(pasteButton, SIGNAL(clicked()), this, SLOT(pasteSlot()));
+      connect(copyButton, SIGNAL(clicked()), this, SLOT(copySlot()));
+      connect(deleteButton, SIGNAL(clicked()), this, SLOT(deleteSlot()));
 
     }
 public slots:
@@ -32,8 +38,21 @@ public slots:
     void removeMeshSlot(){
       removeMesh();
     }
-
-
+    void clearFacesSlot(){
+      clearFaces();
+    }
+    void cutSlot(){
+      cut();
+    }
+    void pasteSlot(){
+      paste();
+    }
+    void copySlot(){
+      copy();
+    }
+    void deleteSlot(){
+      deleteSection();
+    }
 
 };
 #endif

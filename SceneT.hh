@@ -38,6 +38,11 @@ protected:
     QWidget *m_ex1Button;
     QWidget *m_ex2Button;
     QWidget *m_ex3Button;
+    QWidget *clearFacesButton;
+    QWidget *cutButton;
+    QWidget *deleteButton;
+    QWidget *pasteButton;
+    QWidget *copyButton;
     void wheelEvent(QGraphicsSceneWheelEvent * wheelEvent);
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
@@ -47,6 +52,11 @@ protected:
     bool clicked;
     QPointF clickLocation;
     void removeMesh();
+    void clearFaces();
+    void paste();
+    void cut();
+    void copy();
+    void deleteSection();
 
 private:
     int modelCount;
