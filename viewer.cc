@@ -10,7 +10,7 @@ class GraphicsView : public QGraphicsView
 public:
     GraphicsView()
     {
-        setWindowTitle(tr("Bilaterial Mesh Denoising"));
+        setWindowTitle(tr("MeshMixer"));
     }
 
 protected:
