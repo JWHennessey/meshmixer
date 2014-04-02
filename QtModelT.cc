@@ -120,9 +120,9 @@ QtModelT<M>::render()
     //std::cout << vertical << "\n";
     glPushMatrix();
     glTranslatef(horizontal, vertical, zAxis);
-    glRotatef(modelRotation.x(), 1, 0, 0);
-    glRotatef(modelRotation.y(), 0, 1, 0);
-    glRotatef(modelRotation.z(), 0, 0, 1);
+    //glRotatef(modelRotation.x(), 1, 0, 0);
+    //glRotatef(modelRotation.y(), 0, 1, 0);
+    //glRotatef(modelRotation.z(), 0, 0, 1);
 
     glEnable(GL_LIGHTING);
     glShadeModel(GL_FLAT);
@@ -268,7 +268,35 @@ template <typename M>
 void
 QtModelT<M>::updateRotation(QVector3D& rotationVec)
 {
-  modelRotation += rotationVec;
+  double x, y, z = 0.0;
+  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
+  {
+    x += mesh.point(*v_it)[0];
+    y += mesh.point(*v_it)[1];
+    z += mesh.point(*v_it)[2];
+  }
+  x = x / mesh.n_vertices();
+  y = y / mesh.n_vertices();
+  z = z / mesh.n_vertices();
+
+  Eigen::Vector3f t = Eigen::Vector3f(x, y, z);
+
+  typedef typename M::Point Point;
+  QVector3D modelRotation = rotationVec;
+  modelRotation = modelRotation * 0.0174532925;
+  Eigen::AngleAxis<float> aax(modelRotation.x(), Eigen::Vector3f(1, 0, 0));
+  Eigen::AngleAxis<float> aay(modelRotation.y(), Eigen::Vector3f(0, 1, 0));
+  Eigen::AngleAxis<float> aaz(modelRotation.z(), Eigen::Vector3f(0, 0, 1));
+  Eigen::Quaternion<float> rotation = aax * aay * aaz;
+  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
+  {
+    Eigen::Vector3f p = Eigen::Vector3f(mesh.point(*v_it)[0], mesh.point(*v_it)[1], mesh.point(*v_it)[2]);
+    p = p - t;
+    p = rotation * p;
+    p = p + t;
+    mesh.set_point( *v_it, Point(p[0], p[1], p[2]) );
+  }
+  //modelRotation += rotationVec;
 }
 
 template <typename M>

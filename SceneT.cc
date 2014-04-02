@@ -354,10 +354,14 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
         Eigen::Vector3f p = Eigen::Vector3f(delta.x(), delta.y(), 0);
         p = rotation * p;
-        //delta = R * delta;
+        delta = R * delta;
         models[radioId-2]->updateHorizontal(p[0] * TANSLATE_SPEED);
         models[radioId-2]->updateVertical(p[1] * TANSLATE_SPEED);
         models[radioId-2]->updateZAxis(p[2] * TANSLATE_SPEED);
+        //models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
+        //models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
+        //models[radioId-2]->updateZAxis(0 * TANSLATE_SPEED);
+
       }
     }
     else
