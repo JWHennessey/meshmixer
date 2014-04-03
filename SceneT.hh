@@ -66,7 +66,7 @@ private:
     void setDefaultLight();
     void updateGTDistances();
     void removeRadio(int radioId);
-    bool mouseTranslate();
+    int mouseRadioSelected();
     MyMesh m_mymesh;
     QColor m_backgroundColor;
     OpenMesh::IO::Options _options;

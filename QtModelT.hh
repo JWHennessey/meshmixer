@@ -50,7 +50,7 @@ public:
     void updateTransformations(Matrix<double, 3, 3>& R, double x, double y, double z);
     void nearestNeighbours(double radius, MapTable* resultTable);
     void scale(float alpha);
-
+    void clearColour();
 
 private:
     QVector3D modelRotation;
@@ -60,6 +60,7 @@ private:
     GLfloat depth;
     GLfloat zAxis;
     const float deg2Rad;
+
 
 
 

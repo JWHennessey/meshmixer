@@ -367,6 +367,14 @@ QtModelT<M>::updateColour()
 
 template <typename M>
 void
+QtModelT<M>::clearColour()
+{
+  modelColor.setRgb(100, 100, 100);
+  updateColour();
+}
+
+template <typename M>
+void
 QtModelT<M>::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
   std::cout << "paint" << "\n";

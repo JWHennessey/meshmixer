@@ -363,7 +363,7 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     QPointF delta = event->scenePos() - event->lastScenePos();
     const int radioId = whichRadioButton();
     QVector3D angularImpulse = QVector3D(delta.y(), delta.x(), 0) * 0.1;
-    if(mouseTranslate())
+    if(mouseRadioSelected() == 1)
     {
       if(radioId  == 1){
         //std::cout << m_distance << "\n";
@@ -392,7 +392,7 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
       }
     }
-    else
+    if(mouseRadioSelected() == 2)
     {
       
       if(radioId  == 1){
@@ -666,13 +666,17 @@ SceneT<M>::removeRadio(int radioId)
 
 
 template <typename M>
-bool
-SceneT<M>::mouseTranslate()
+int
+SceneT<M>::mouseRadioSelected()
 {
   if(translateRadio->isChecked())
-    return true;
+    return 1;
+  else if(rotateRadio->isChecked())
+    return 2;
+  else if(paintFacesRadio->isChecked())
+    return 3;
   else
-    return false;
+    return 0;
 }
 
 
@@ -702,6 +706,10 @@ void
 SceneT<M>::clearFaces()
 {
   std::cout << "Clear Faces Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId != 1 && models[radioId-2] != NULL){
+    models[radioId-2]->clearColour();
+  }
 }
 
 
