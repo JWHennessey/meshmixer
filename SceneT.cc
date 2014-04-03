@@ -94,7 +94,7 @@ SceneT<M>::SceneT()
   mouseControlBox->setHidden(true);
   translateRadio = new QRadioButton(tr("Translate"));
   rotateRadio = new QRadioButton(tr("Rotate"));
-  paintFacesRadio = new QRadioButton(tr("Paint Faces"));
+  paintFacesRadio = new QRadioButton(tr("Paint Faces (with Alt)"));
   translateRadio->setChecked(true);
   QVBoxLayout *vb = new QVBoxLayout;
   vb->addWidget(translateRadio);
@@ -419,18 +419,18 @@ template <typename M>
 void
 SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-  int selected = whichRadioButton() - 2;
-  if(modelCount > 0 && event->button() == LeftButton && selected >= 0 && mouseRadioSelected() == 3){
-    paintFaces(event);
-    inPaintingMode = true;
-  }else {
+  //int selected = whichRadioButton() - 2;
+  //if(modelCount > 0 && event->button() == LeftButton && selected >= 0 && mouseRadioSelected() == 3){
+    //paintFaces(event);
+    //inPaintingMode = true;
+  //}else {
   QGraphicsScene::mousePressEvent(event);
   if (event->isAccepted())
     return;
   m_mouseEventTime = m_time.elapsed();
   event->accept();
   update();
-  }
+ // }
 }
 
 template <typename M>
@@ -444,6 +444,13 @@ SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
   const int delta = m_time.elapsed() - m_mouseEventTime;
   event->accept();
   update();
+  inPaintingMode = false;
+}
+
+template <typename M>
+void
+SceneT<M>::keyReleaseEvent( QKeyEvent* event)
+{
   inPaintingMode = false;
 }
 
@@ -474,6 +481,10 @@ SceneT<M>::keyPressEvent( QKeyEvent* event)
   {
     switch(event->key())
     {
+      case Key_Alt:
+        if(mouseRadioSelected() == 3)
+          inPaintingMode = true;
+        break;
       case Key_Up:
         models[radioId-2]->updateVertical(-TANSLATE_SPEED);
         break;

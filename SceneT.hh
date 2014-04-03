@@ -48,6 +48,7 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
     void keyPressEvent( QKeyEvent* event);
+    void keyReleaseEvent( QKeyEvent* event);
     GLuint PickBuffer[65535];
     bool clicked;
     QPointF clickLocation;
