@@ -93,10 +93,12 @@ SceneT<M>::SceneT()
   mouseControlBox->setHidden(true);
   translateRadio = new QRadioButton(tr("Translate"));
   rotateRadio = new QRadioButton(tr("Rotate"));
+  paintFacesRadio = new QRadioButton(tr("Paint Faces"));
   translateRadio->setChecked(true);
   QVBoxLayout *vb = new QVBoxLayout;
   vb->addWidget(translateRadio);
   vb->addWidget(rotateRadio);
+  vb->addWidget(paintFacesRadio);
   vb->addStretch(1);
   mouseControlBox->setLayout(vb);
   controls->layout()->addWidget(mouseControlBox);

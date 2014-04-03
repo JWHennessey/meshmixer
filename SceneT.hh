@@ -100,7 +100,7 @@ private:
     QGroupBox* mouseControlBox;
     QRadioButton* translateRadio;
     QRadioButton* rotateRadio;
-
+    QRadioButton* paintFacesRadio;
 
 };
 
