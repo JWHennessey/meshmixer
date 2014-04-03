@@ -101,6 +101,8 @@ private:
     QRadioButton* translateRadio;
     QRadioButton* rotateRadio;
     QRadioButton* paintFacesRadio;
+    void paintFaces(QGraphicsSceneMouseEvent *event);
+    bool inPaintingMode;
 
 };
 

@@ -36,6 +36,7 @@ SceneT<M>::SceneT()
 , m_horizontal(0.0f)
 , TANSLATE_SPEED(0.01f)
 , deg2Rad(0.0174532925)
+, inPaintingMode(false)
 {
   modelCount = 0;
   QWidget *controls = createDialog(tr("Controls"));
@@ -44,7 +45,7 @@ SceneT<M>::SceneT()
   controls->layout()->addWidget(m_modelButton);
 
   groupBox = new QGroupBox(tr("Select Mesh"));
-  radio1 = new QRadioButton(tr("All"));
+  radio1 = new QRadioButton(tr("None"));
   radio2 = new QRadioButton(tr("M1"));
   radio3 = new QRadioButton(tr("M2"));
   radio4 = new QRadioButton(tr("M3"));
@@ -357,6 +358,8 @@ void
 SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
   QGraphicsScene::mouseMoveEvent(event);
+  if(inPaintingMode) paintFaces(event);
+  
   if (event->isAccepted())
     return;
   if (event->buttons() & Qt::LeftButton) {
@@ -365,27 +368,27 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     QVector3D angularImpulse = QVector3D(delta.y(), delta.x(), 0) * 0.1;
     if(mouseRadioSelected() == 1)
     {
-      if(radioId  == 1){
-        //std::cout << m_distance << "\n";
-        m_vertical -= delta.y() * (TANSLATE_SPEED);
-        m_horizontal += delta.x() * (TANSLATE_SPEED);
-      }
-      else
+      //if(radioId  == 1){
+        ////std::cout << m_distance << "\n";
+        //m_vertical -= delta.y() * (TANSLATE_SPEED);
+        //m_horizontal += delta.x() * (TANSLATE_SPEED);
+      //}
+      if(radioId  != 1)
       {
-        typedef typename M::Point Point;
-        QVector3D modelRotation = m_rotation;
-        modelRotation = modelRotation * deg2Rad;
-        Eigen::AngleAxis<float> aax(modelRotation.x(), Eigen::Vector3f(1, 0, 0));
-        Eigen::AngleAxis<float> aay(modelRotation.y(), Eigen::Vector3f(0, 1, 0));
-        Eigen::AngleAxis<float> aaz(modelRotation.z(), Eigen::Vector3f(0, 0, 1));
-        Eigen::Quaternion<float> rotation = aax * aay * aaz;
+        //typedef typename M::Point Point;
+        //QVector3D modelRotation = m_rotation;
+        //modelRotation = modelRotation * deg2Rad;
+        //Eigen::AngleAxis<float> aax(modelRotation.x(), Eigen::Vector3f(1, 0, 0));
+        //Eigen::AngleAxis<float> aay(modelRotation.y(), Eigen::Vector3f(0, 1, 0));
+        //Eigen::AngleAxis<float> aaz(modelRotation.z(), Eigen::Vector3f(0, 0, 1));
+        //Eigen::Quaternion<float> rotation = aax * aay * aaz;
 
-        Eigen::Vector3f p = Eigen::Vector3f(delta.x(), delta.y(), 0);
-        p = rotation * p;
+        //Eigen::Vector3f p = Eigen::Vector3f(delta.x(), delta.y(), 0);
+        //p = rotation * p;
         //delta = R * delta;
-        models[radioId-2]->updateHorizontal(p[0] * TANSLATE_SPEED);
-        models[radioId-2]->updateVertical(p[1] * TANSLATE_SPEED);
-        models[radioId-2]->updateZAxis(p[2] * TANSLATE_SPEED);
+        models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
+        models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
+        //models[radioId-2]->updateZAxis(p[2] * TANSLATE_SPEED);
         //models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
         //models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
         //models[radioId-2]->updateZAxis(0 * TANSLATE_SPEED);
@@ -395,14 +398,14 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     if(mouseRadioSelected() == 2)
     {
       
-      if(radioId  == 1){
-        m_rotation += angularImpulse;
-        //for (int i = 0; i != modelCount; i++) {
-          //if(models[i] != NULL) models[i]->updateRotation(angularImpulse);
-        //}
+      //if(radioId  == 1){
+        //m_rotation += angularImpulse;
+        ////for (int i = 0; i != modelCount; i++) {
+          ////if(models[i] != NULL) models[i]->updateRotation(angularImpulse);
+        ////}
 
-      }
-      else
+      //}
+      if(radioId  != 1)
       {
         models[radioId-2]->updateRotation(angularImpulse);
       }
@@ -417,55 +420,10 @@ void
 SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
   int selected = whichRadioButton() - 2;
-  if(modelCount > 0 && event->button() == LeftButton && selected >= 0){
-    glRenderMode(GL_SELECT);
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    
-    GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
-    gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.01, 0.1, viewport);
-    gluPerspective(70, width() / height(), 0.01, 1000);
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-    glTranslatef(m_horizontal, m_vertical, -m_distance);
-    glRotatef(m_rotation.x(), 1, 0, 0);
-    glRotatef(m_rotation.y(), 0, 1, 0);
-    glRotatef(m_rotation.z(), 0, 0, 1);
-    
-    glEnable(GL_MULTISAMPLE);
-    glInitNames();
-    glPushName( 0xffffffff );
-    if (models[selected] != NULL) models[selected]->render();
-    std::cout << selected << "q\n";
-    glDisable(GL_MULTISAMPLE);
-    
-    glPopMatrix();
-    
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-  }
-  GLuint Nhits = glRenderMode(GL_RENDER);
-  clicked == false;
-  std::cout << Nhits << " y\n";
-  if (Nhits > 0){
-    GLuint item;
-    GLuint front;
-    for(size_t i = 0, index = 0; i < Nhits; i++ )
-    {
-      GLuint nitems = PickBuffer[index++];
-      std::cout << index << " x" << index+1 << " \n";
-      index+= 2;
-      for(size_t j = 0; j < nitems; j++ )
-      {
-        item = PickBuffer[index++];
-        std::cout << Nhits << " z" << item << " \n";
-      }
-      models[selected]->select(item);
-    }
-  } else {
+  if(modelCount > 0 && event->button() == LeftButton && selected >= 0 && mouseRadioSelected() == 3){
+    paintFaces(event);
+    inPaintingMode = true;
+  }else {
   QGraphicsScene::mousePressEvent(event);
   if (event->isAccepted())
     return;
@@ -486,6 +444,7 @@ SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
   const int delta = m_time.elapsed() - m_mouseEventTime;
   event->accept();
   update();
+  inPaintingMode = false;
 }
 
 template <typename M>
@@ -531,6 +490,63 @@ SceneT<M>::keyPressEvent( QKeyEvent* event)
   }
   event->accept();
   update();
+}
+
+template <typename M>
+void
+SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
+{
+    int selected = whichRadioButton() - 2;
+    glRenderMode(GL_SELECT);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.01, 0.1, viewport);
+    gluPerspective(70, width() / height(), 0.01, 1000);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    glTranslatef(m_horizontal, m_vertical, -m_distance);
+    glRotatef(m_rotation.x(), 1, 0, 0);
+    glRotatef(m_rotation.y(), 0, 1, 0);
+    glRotatef(m_rotation.z(), 0, 0, 1);
+    
+    glEnable(GL_MULTISAMPLE);
+    glInitNames();
+    glPushName( 0xffffffff );
+    if (models[selected] != NULL) models[selected]->render();
+    std::cout << selected << "q\n";
+    glDisable(GL_MULTISAMPLE);
+    
+    glPopMatrix();
+    
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+  
+    GLuint Nhits = glRenderMode(GL_RENDER);
+    clicked == false;
+    std::cout << Nhits << " y\n";
+    if (Nhits > 0){
+      GLuint item;
+      GLuint front;
+      for(size_t i = 0, index = 0; i < Nhits; i++ )
+      {
+        GLuint nitems = PickBuffer[index++];
+        std::cout << index << " x" << index+1 << " \n";
+        index+= 2;
+        for(size_t j = 0; j < nitems; j++ )
+        {
+          item = PickBuffer[index++];
+          std::cout << Nhits << " z" << item << " \n";
+        }
+        models[selected]->select(item);
+      }
+    } 
+
+
 }
 
 template <typename M>
