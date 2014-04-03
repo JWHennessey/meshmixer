@@ -211,9 +211,8 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
     glPushMatrix();
     glLoadIdentity();
 
-    //glEnable(GL_LIGHTING);
-    //glShadeModel(GL_FLAT);
-    //glutSolidTeapot(0.5);
+    glEnable(GL_LIGHTING);
+    glShadeModel(GL_FLAT);
     
     glTranslatef(m_horizontal, m_vertical, -m_distance);
     glRotatef(m_rotation.x(), 1, 0, 0);
@@ -221,7 +220,8 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
     glRotatef(m_rotation.z(), 0, 0, 1);
 
     glEnable(GL_MULTISAMPLE);
-
+    glColorMaterial ( GL_FRONT_AND_BACK, GL_EMISSION ) ;
+    glEnable( GL_COLOR_MATERIAL ) ;
     for (int i = 0; i != modelCount; i++) {
       if(models[i] != NULL) models[i]->render();
     }
@@ -416,7 +416,8 @@ template <typename M>
 void
 SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-  if(modelCount > 0 && event->button() == LeftButton){
+  int selected = whichRadioButton() - 2;
+  if(modelCount > 0 && event->button() == LeftButton && selected >= 0){
     glRenderMode(GL_SELECT);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -437,10 +438,8 @@ SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
     glEnable(GL_MULTISAMPLE);
     glInitNames();
     glPushName( 0xffffffff );
-    for (int i = 0; i != modelCount; i++) {
-      if (models[i] != NULL) models[i]->render();
-    }
-    
+    if (models[selected] != NULL) models[selected]->render();
+    std::cout << selected << "q\n";
     glDisable(GL_MULTISAMPLE);
     
     glPopMatrix();
@@ -464,7 +463,7 @@ SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
         item = PickBuffer[index++];
         std::cout << Nhits << " z" << item << " \n";
       }
-      models[0]->select(item);
+      models[selected]->select(item);
     }
   } else {
   QGraphicsScene::mousePressEvent(event);
@@ -601,7 +600,7 @@ SceneT<M>::removeMesh()
     models[radioId-2] = NULL;
     removeRadio(radioId);
     bool clear = true;
-    for(typename std::vector<QtModelT<M>*>::size_type i = 0; i != modelCount; i++) {
+    for(int i = 0; i != modelCount; i++) {
       if(models[i] != NULL)
         clear = false;
     }
