@@ -124,6 +124,10 @@ QtModelT<M>::render()
     //glRotatef(modelRotation.y(), 0, 1, 0);
     //glRotatef(modelRotation.z(), 0, 0, 1);
 
+  //glEnable(GL_LIGHTING);
+  //glShadeModel(GL_FLAT);
+  glEnable(GL_DEPTH_TEST);
+  
   glEnableClientState(GL_VERTEX_ARRAY);
   glVertexPointer(3, GL_FLOAT, 0, mesh.points());
   
@@ -133,6 +137,7 @@ QtModelT<M>::render()
 
   for (; fIt!=fEnd; ++fIt)
   {
+    glLoadName(index);
     glBegin(GL_TRIANGLES);
     glColor3fv(&mesh.color(*fIt)[0]);
     fvIt = mesh.cfv_iter(*fIt);
@@ -348,7 +353,13 @@ template <typename M>
 void
 QtModelT<M>::updateColour()
 {
-  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
+  mesh.request_face_colors();
+  mesh.request_vertex_colors();
+  for (typename M::FaceIter f_it=mesh.faces_begin(); f_it!=mesh.faces_end(); ++f_it)
+  {
+    mesh.set_color(*f_it, OpenMesh::Vec3f(modelColor.redF(), modelColor.blueF(), modelColor.greenF()));
+  }
+  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it)
   {
     mesh.set_color(*v_it, OpenMesh::Vec3f(modelColor.redF(), modelColor.blueF(), modelColor.greenF()));
   }

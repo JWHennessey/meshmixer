@@ -203,20 +203,14 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
     glSelectBuffer(65535, PickBuffer);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-
     glLoadIdentity();
-    
     gluPerspective(70, width() / height(), 0.01, 1000);
-
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    setDefaultMaterial();
-
-    setDefaultLight();  
     glLoadIdentity();
 
-    glEnable(GL_LIGHTING);
-    glShadeModel(GL_FLAT);
+    //glEnable(GL_LIGHTING);
+    //glShadeModel(GL_FLAT);
     //glutSolidTeapot(0.5);
     
     glTranslatef(m_horizontal, m_vertical, -m_distance);
@@ -229,6 +223,8 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
     for (int i = 0; i != modelCount; i++) {
       if(models[i] != NULL) models[i]->render();
     }
+    setDefaultMaterial();
+    setDefaultLight();
     glDisable(GL_MULTISAMPLE);
 
     glPopMatrix();
@@ -418,21 +414,7 @@ template <typename M>
 void
 SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-  clickLocation = event->scenePos();
-  clicked = true;
-  QGraphicsScene::mousePressEvent(event);
-  if (event->isAccepted())
-    return;
-  m_mouseEventTime = m_time.elapsed();
-  event->accept();
-  update();
-}
-
-template <typename M>
-void
-SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-  if(modelCount > 0){
+  if(modelCount > 0 && event->button() == LeftButton){
     glRenderMode(GL_SELECT);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -440,7 +422,7 @@ SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
-    gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 1, 1, viewport);
+    gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.01, 0.1, viewport);
     gluPerspective(70, width() / height(), 0.01, 1000);
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
@@ -473,6 +455,7 @@ SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     for(size_t i = 0, index = 0; i < Nhits; i++ )
     {
       GLuint nitems = PickBuffer[index++];
+      std::cout << index << " x" << index+1 << " \n";
       index+= 2;
       for(size_t j = 0; j < nitems; j++ )
       {
@@ -482,13 +465,26 @@ SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
       models[0]->select(item);
     }
   } else {
+  QGraphicsScene::mousePressEvent(event);
+  if (event->isAccepted())
+    return;
+  m_mouseEventTime = m_time.elapsed();
+  event->accept();
+  update();
+  }
+}
+
+template <typename M>
+void
+SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+
   QGraphicsScene::mouseReleaseEvent(event);
   if (event->isAccepted())
     return;
   const int delta = m_time.elapsed() - m_mouseEventTime;
   event->accept();
   update();
-  }
 }
 
 template <typename M>
