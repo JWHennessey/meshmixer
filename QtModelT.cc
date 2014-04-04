@@ -16,7 +16,7 @@
 
 template <typename M>
 QtModelT<M>::QtModelT(M& m)
-  : modelColor(100, 100, 100)
+  : modelColor(0, 0, 0)
   , vertical(0.0f)
   , horizontal(0.0f)
   , depth(0.0f)
@@ -126,7 +126,7 @@ template <typename M>
 void
 QtModelT<M>::select(int faceNumber){
   typename M::FaceHandle face = mesh.face_handle(faceNumber);
-  mesh.set_color(face, typename M::Color(255,255,255));
+  mesh.set_color(face, typename M::Color(0, 255, 255));
 }
 
 template <typename M>
@@ -386,6 +386,15 @@ QtModelT<M>::updateColour()
   {
     mesh.set_color(*v_it, OpenMesh::Vec3f(modelColor.redF(), modelColor.blueF(), modelColor.greenF()));
   }
+}
+
+template <typename M>
+void
+QtModelT<M>::clearColour()
+{
+  mesh.request_vertex_colors();
+  modelColor.setRgb(10, 10, 10);
+  updateColour();
 }
 
 template <typename M>

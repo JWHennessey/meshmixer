@@ -48,6 +48,7 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
     void keyPressEvent( QKeyEvent* event);
+    void keyReleaseEvent( QKeyEvent* event);
     GLuint PickBuffer[65535];
     bool clicked;
     QPointF clickLocation;
@@ -68,7 +69,7 @@ private:
     void setDefaultLight();
     void updateGTDistances();
     void removeRadio(int radioId);
-    bool mouseTranslate();
+    int mouseRadioSelected();
     MyMesh m_mymesh;
     QColor m_backgroundColor;
     OpenMesh::IO::Options _options;
@@ -103,6 +104,8 @@ private:
     QRadioButton* translateRadio;
     QRadioButton* rotateRadio;
     QRadioButton* paintFacesRadio;
+    void paintFaces(QGraphicsSceneMouseEvent *event);
+    bool inPaintingMode;
 
 };
 
