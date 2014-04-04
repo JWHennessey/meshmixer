@@ -172,8 +172,8 @@ SceneT<M>::setDefaultLight(void)
   GLfloat pos1[] = { 0.1,  0.1, -0.02, 0.0};
   GLfloat pos2[] = {-0.1,  0.1, -0.02, 0.0};
   GLfloat pos3[] = { 0.0,  0.0,  0.1,  0.0};
-  GLfloat col1[] = { 0.7,  0.7,  0.8,  1.0};
-  GLfloat col2[] = { 0.8,  0.7,  0.7,  1.0};
+  GLfloat col1[] = { 1.0,  1.0,  1.0,  1.0};
+  GLfloat col2[] = { 1.0,  1.0,  1.0,  1.0};
   GLfloat col3[] = { 1.0,  1.0,  1.0,  1.0};
  
   glEnable(GL_LIGHT0);    
@@ -235,6 +235,101 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
     glPopMatrix();
   }
   //painter->endNativePainting();
+}
+
+template <typename M>
+void
+SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
+{
+  std::vector<size_t> m1SnapRegion = computeSnapRegion(m1, m2);
+  std::vector<size_t> m2SnapRegion = computeSnapRegion(m2, m1);
+  std::cout << &m1SnapRegion << " " << &m2SnapRegion << "\n";
+  
+}
+
+template <typename M>
+std::vector<size_t>
+SceneT<M>::computeSnapRegion(QtModelT<M>* m1, QtModelT<M>* m2)
+{
+  std::vector<size_t> snapRegion;
+  typedef nanoflann::KDTreeEigenMatrixAdaptor< PointMatrix >  my_kd_tree_t;
+  
+  const size_t num_results = 1;
+  PointMatrix m1Matrix = m1->buildMatrix();
+  PointMatrix m2Matrix = m2->buildMatrix();
+  //We find the set of closest points to the other shape boundary loop
+  
+  //m1 find clost points on m2 boundary
+  my_kd_tree_t mat_index(3, m1Matrix, 10);
+  mat_index.index->buildIndex();
+  
+  int rowCount = m2->boundaryPoints.size();
+  Matrix<double, Dynamic, 1> mappings(rowCount, 1);
+  Matrix<double, Dynamic, 1> distances(rowCount, 1);
+  
+  for(int i=0; i < rowCount; i++)
+  {
+    std::vector<double> query_pt(3);
+    query_pt[0] =  m2->boundaryMatrix(i,0);
+    query_pt[1] =  m2->boundaryMatrix(i,1);
+    query_pt[2] =  m2->boundaryMatrix(i,2);
+    
+    std::vector<size_t> ret_index(num_results);
+    std::vector<double> out_dist_sqr(num_results);
+    
+    nanoflann::KNNResultSet<double> resultSet(num_results);
+    
+    resultSet.init(&ret_index[0], &out_dist_sqr[0] );
+    mat_index.index->findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(10));
+    
+    mappings(i, 0) = ret_index[0];
+    distances(i, 0) = out_dist_sqr[0];
+  }
+  //Next, we compute the geodesic distance for each point in the set to their own boundary loop.
+  my_kd_tree_t b_mat_index(3, m1->boundaryMatrix, 10);
+  b_mat_index.index->buildIndex();
+  double snapMax = 0;
+  for(int i=0; i < rowCount; i++)
+  {
+    std::vector<double> query_pt(3);
+    query_pt[0] =  mappings(i,0);
+    query_pt[1] =  mappings(i,1);
+    query_pt[2] =  mappings(i,2);
+    
+    std::vector<size_t> ret_index(num_results);
+    std::vector<double> out_dist_sqr(num_results);
+    nanoflann::KNNResultSet<double> resultSet(num_results);
+    
+    resultSet.init(&ret_index[0], &out_dist_sqr[0] );
+    mat_index.index->findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(10));
+    
+    //We define the snapping region size R as the maximum of the geodesic distances.
+    if (out_dist_sqr[0] > snapMax) snapMax = out_dist_sqr[0];
+  }
+  //Thus, the sub-mesh within R geodesic distance from the boundary loop is defined as the snapping region
+  for(int i=0; i < rowCount; i++)
+  {
+    std::vector<double> query_pt(3);
+    query_pt[0] =  mappings(i,0);
+    query_pt[1] =  mappings(i,1);
+    query_pt[2] =  mappings(i,2);
+    
+    std::vector<size_t> ret_index(num_results);
+    std::vector<double> out_dist_sqr(num_results);
+    nanoflann::KNNResultSet<double> resultSet(num_results);
+    
+    std::vector< std::pair< size_t, double > > resultPairs;
+    resultPairs.reserve(m1->getNoVerticies());
+    size_t count = mat_index.index->radiusSearch(&query_pt[0], snapMax, resultPairs, nanoflann::SearchParams(true));
+    snapRegion.reserve(count);
+    for (size_t j = 0; j < count; j++){
+      m1->select(resultPairs[j].first);
+      snapRegion.push_back(resultPairs[j].first);
+    }
+  }
+  std::sort(snapRegion.begin(), snapRegion.end());
+  snapRegion.erase(std::unique(snapRegion.begin(), snapRegion.end()), snapRegion.end());
+  return snapRegion;
 }
 
 template <typename M>
@@ -527,6 +622,8 @@ SceneT<M>::keyPressEvent( QKeyEvent* event)
       case Key_Left:
         models[radioId-2]->updateHorizontal(-TANSLATE_SPEED);
         break;
+      case Key_S:
+        softICP(models[radioId-2], models[radioId-1]);
     }
   }
   event->accept();
