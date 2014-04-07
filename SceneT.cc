@@ -45,7 +45,7 @@ SceneT<M>::SceneT()
   controls->layout()->addWidget(m_modelButton);
 
   groupBox = new QGroupBox(tr("Select Mesh"));
-  radio1 = new QRadioButton(tr("None"));
+  radio1 = new QRadioButton(tr("All"));
   radio2 = new QRadioButton(tr("M1"));
   radio3 = new QRadioButton(tr("M2"));
   radio4 = new QRadioButton(tr("M3"));
@@ -467,12 +467,12 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     }
     if(mouseRadioSelected() == 1)
     {
-      //if(radioId  == 1){
-        ////std::cout << m_distance << "\n";
-        //m_vertical -= delta.y() * (TANSLATE_SPEED);
-        //m_horizontal += delta.x() * (TANSLATE_SPEED);
-      //}
-      if(radioId  != 1)
+      if(radioId  == 1){
+        //std::cout << m_distance << "\n";
+        m_vertical -= delta.y() * (TANSLATE_SPEED);
+        m_horizontal += delta.x() * (TANSLATE_SPEED);
+      }
+      else//if(radioId  != 1)
       {
         //typedef typename M::Point Point;
         //QVector3D modelRotation = m_rotation;
@@ -497,13 +497,13 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     if(mouseRadioSelected() == 2)
     {
       
-      //if(radioId  == 1){
-        //m_rotation += angularImpulse;
+      if(radioId  == 1){
+        m_rotation += angularImpulse;
         ////for (int i = 0; i != modelCount; i++) {
           ////if(models[i] != NULL) models[i]->updateRotation(angularImpulse);
         ////}
 
-      //}
+      }
       if(radioId  != 1)
       {
         models[radioId-2]->updateRotation(angularImpulse);
