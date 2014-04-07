@@ -526,6 +526,8 @@ SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
   int index = getClickedMeshIndex(event);
   if (index >= 0)
   clickRadioButton(index+2);
+  else
+  clickRadioButton(1);
   QGraphicsScene::mousePressEvent(event);
   if (event->isAccepted())
     return;
@@ -645,7 +647,7 @@ SceneT<M>::getClickedMeshIndex(QGraphicsSceneMouseEvent *event){
   Nhits = glRenderMode(GL_RENDER);
   selected++;
   }
-  if (models[selected-1] != NULL){
+  if (models[selected-1] != NULL && Nhits != 0){
     return selected-1;
   }else {
     return -1;
