@@ -27,6 +27,7 @@ public:
       connect(pasteButton, SIGNAL(clicked()), this, SLOT(pasteSlot()));
       connect(copyButton, SIGNAL(clicked()), this, SLOT(copySlot()));
       connect(deleteButton, SIGNAL(clicked()), this, SLOT(deleteSlot()));
+      connect(geoTreeButton, SIGNAL(clicked()), this, SLOT(geoTreeSlot()));
     }
 public slots:
     void selectMesh()
@@ -53,6 +54,9 @@ public slots:
       deleteSection();
     }
 
+    void geoTreeSlot(){
+      geoTree();
+    }
 
 
 

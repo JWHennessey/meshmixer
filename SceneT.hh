@@ -60,6 +60,7 @@ protected:
     void cut();
     void copy();
     void deleteSection();
+    void geoTree();
     void softICP(QtModelT<M>* m1, QtModelT<M>* m2);
     std::vector<size_t> computeSnapRegion(QtModelT<M>* m1, QtModelT<M>* m2);
 

@@ -53,6 +53,7 @@ public:
     void nearestNeighbours(double radius, MapTable* resultTable);
     void scale(float alpha);
     void clearColour();
+    void createGeoTree(int k);
 
 private:
     QVector3D modelRotation;

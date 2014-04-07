@@ -129,6 +129,19 @@ SceneT<M>::SceneT()
   controls->layout()->addWidget(deleteButton);
   deleteButton->setHidden(true);
 
+
+  geoTreeSpinBox = new QSpinBox();
+  geoTreeSpinBox->setMinimum(1);
+  geoTreeSpinBox->setMaximum(20);
+  geoTreeSpinBox->setPrefix("k: ");
+  controls->layout()->addWidget(geoTreeSpinBox);
+  geoTreeSpinBox->setHidden(true);
+
+  geoTreeButton = new QPushButton(tr("GeoTree"));
+  controls->layout()->addWidget(geoTreeButton);
+  geoTreeButton->setHidden(true);
+
+
   //QWidget *widgets[] = { meshes, controls, examples  };
   QWidget *widgets[] = { controls };
 
@@ -381,6 +394,8 @@ SceneT<M>::loadMesh(const QString filePath)
           deleteButton->setHidden(false);
           pasteButton->setHidden(false);
           copyButton->setHidden(false);
+          geoTreeButton->setHidden(false);
+          geoTreeSpinBox->setHidden(false);
           break;
         case 2:
           radio3->setHidden(false);
@@ -717,7 +732,8 @@ SceneT<M>::removeMesh()
     deleteButton->setHidden(true);
     pasteButton->setHidden(true);
     copyButton->setHidden(true);
-
+    geoTreeButton->setHidden(true);
+    geoTreeSpinBox->setHidden(true);
   }
   else
   {
@@ -739,6 +755,8 @@ SceneT<M>::removeMesh()
       deleteButton->setHidden(true);
       pasteButton->setHidden(true);
       copyButton->setHidden(true);
+      geoTreeButton->setHidden(true);
+      geoTreeSpinBox->setHidden(true);
       modelCount = 0;
     }
   }
@@ -843,4 +861,15 @@ SceneT<M>::deleteSection()
   std::cout << "Delete Pressesed" << "\n";
 }
 
+template <typename M>
+void
+SceneT<M>::geoTree()
+{
+  std::cout << "GeoTree Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId != 1 && models[radioId-2] != NULL){
+    models[radioId-2]->createGeoTree(geoTreeSpinBox->value());
+  }
+
+}
 #endif

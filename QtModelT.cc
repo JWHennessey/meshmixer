@@ -511,4 +511,12 @@ QtModelT<M>::scale(float alpha)
 
 }
 
+template<typename M>
+void
+QtModelT<M>::createGeoTree(int k)
+{
+  std::cout << "Create GeoTree with " << k << " patches" << "\n";
+}
+
+
 #endif
