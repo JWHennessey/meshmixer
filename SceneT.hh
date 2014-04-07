@@ -43,6 +43,8 @@ protected:
     QWidget *deleteButton;
     QWidget *pasteButton;
     QWidget *copyButton;
+    QWidget *geoTreeButton;
+    QSpinBox *geoTreeSpinBox;
     void wheelEvent(QGraphicsSceneWheelEvent * wheelEvent);
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
