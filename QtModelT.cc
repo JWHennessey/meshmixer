@@ -27,6 +27,7 @@ QtModelT<M>::QtModelT(M& m)
 
   double min_x, max_x, min_y, max_y, min_z, max_z;
   bool first = true;
+  boundaryPoints.reserve(mesh.n_vertices()/2);
   for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
   {
     if(first){
@@ -38,7 +39,9 @@ QtModelT<M>::QtModelT(M& m)
       max_z = mesh.point(*v_it)[2];
       first = false;
     }
-
+    
+    if (mesh.is_boundary(*v_it)) boundaryPoints.push_back(*v_it);
+    
     if(mesh.point(*v_it)[0] < min_x )
       min_x = mesh.point(*v_it)[0];
     else if(mesh.point(*v_it)[0] > max_x )
@@ -92,6 +95,26 @@ QtModelT<M>::QtModelT(M& m)
   calcNormals();
 }
 
+template <typename M>
+void
+QtModelT<M>::findBoundaryVertices(){
+  boundaryPoints.clear();
+  boundaryPoints.reserve(mesh.n_vertices()/2);
+  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it)
+  {
+    if (mesh.is_boundary(*v_it)) boundaryPoints.push_back(*v_it);
+  }
+  PointMatrix m(boundaryPoints.size(), 3);
+  for (int count = 0; count < boundaryPoints.size(); ++count)
+  {
+    VertexHandle v_it = boundaryPoints[count];
+    m(count, 0) = mesh.point(v_it)[0];
+    m(count, 1) = mesh.point(v_it)[1];
+    m(count, 2) = mesh.point(v_it)[2];
+    count += 1;
+  }
+  boundaryMatrix = m;
+}
 
 template <typename M>
 QtModelT<M>::~QtModelT()

@@ -29,7 +29,9 @@ public:
     QRectF boundingRect() const;
     int number;
     void calcNormals();
-
+    std::vector<VertexHandle> boundaryPoints;
+    PointMatrix boundaryMatrix;
+  
 public:
     M mesh;
     QtModelT(M& m);
@@ -60,10 +62,7 @@ private:
     GLfloat depth;
     GLfloat zAxis;
     const float deg2Rad;
-
-
-
-
+    void findBoundaryVertices();
 };
 
 #if defined(OM_INCLUDE_TEMPLATES) && !defined(MODEL_CC)
