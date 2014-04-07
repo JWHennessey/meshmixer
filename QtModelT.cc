@@ -16,7 +16,7 @@
 
 template <typename M>
 QtModelT<M>::QtModelT(M& m)
-  : modelColor(100, 100, 100)
+  : modelColor(0, 0, 0)
   , vertical(0.0f)
   , horizontal(0.0f)
   , depth(0.0f)
@@ -27,6 +27,7 @@ QtModelT<M>::QtModelT(M& m)
 
   double min_x, max_x, min_y, max_y, min_z, max_z;
   bool first = true;
+  boundaryPoints.reserve(mesh.n_vertices()/2);
   for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
   {
     if(first){
@@ -38,7 +39,9 @@ QtModelT<M>::QtModelT(M& m)
       max_z = mesh.point(*v_it)[2];
       first = false;
     }
-
+    
+    if (mesh.is_boundary(*v_it)) boundaryPoints.push_back(*v_it);
+    
     if(mesh.point(*v_it)[0] < min_x )
       min_x = mesh.point(*v_it)[0];
     else if(mesh.point(*v_it)[0] > max_x )
@@ -92,6 +95,26 @@ QtModelT<M>::QtModelT(M& m)
   calcNormals();
 }
 
+template <typename M>
+void
+QtModelT<M>::findBoundaryVertices(){
+  boundaryPoints.clear();
+  boundaryPoints.reserve(mesh.n_vertices()/2);
+  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it)
+  {
+    if (mesh.is_boundary(*v_it)) boundaryPoints.push_back(*v_it);
+  }
+  PointMatrix m(boundaryPoints.size(), 3);
+  for (int count = 0; count < boundaryPoints.size(); ++count)
+  {
+    VertexHandle v_it = boundaryPoints[count];
+    m(count, 0) = mesh.point(v_it)[0];
+    m(count, 1) = mesh.point(v_it)[1];
+    m(count, 2) = mesh.point(v_it)[2];
+    count += 1;
+  }
+  boundaryMatrix = m;
+}
 
 template <typename M>
 QtModelT<M>::~QtModelT()
@@ -103,7 +126,7 @@ template <typename M>
 void
 QtModelT<M>::select(int faceNumber){
   typename M::FaceHandle face = mesh.face_handle(faceNumber);
-  mesh.set_color(face, typename M::Color(255,255,255));
+  mesh.set_color(face, typename M::Color(0, 255, 255));
 }
 
 template <typename M>
@@ -114,7 +137,7 @@ QtModelT<M>::render()
                                  fEnd(mesh.faces_end());
 
     typename M::ConstFaceVertexIter fvIt;
-
+    unsigned int index = 0;
     //std::cout << "Render" << "\n";
     //std::cout << horizontal << "\n";
     //std::cout << vertical << "\n";
@@ -124,13 +147,42 @@ QtModelT<M>::render()
     //glRotatef(modelRotation.y(), 0, 1, 0);
     //glRotatef(modelRotation.z(), 0, 0, 1);
 
+  //glEnable(GL_LIGHTING);
+  //glShadeModel(GL_FLAT);
+  glEnable(GL_DEPTH_TEST);
+  
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glVertexPointer(3, GL_FLOAT, 0, mesh.points());
+  
+  glEnableClientState(GL_NORMAL_ARRAY);
+  glNormalPointer(GL_FLOAT, 0, mesh.vertex_normals());
+  
+
+  for (; fIt!=fEnd; ++fIt)
+  {
+    glLoadName(index);
+    glBegin(GL_TRIANGLES);
+    glColor3fv(&mesh.color(*fIt)[0]);
+    fvIt = mesh.cfv_iter(*fIt);
+    glArrayElement(fvIt->idx());
+    ++fvIt;
+    glArrayElement(fvIt->idx());
+    ++fvIt;
+    glArrayElement(fvIt->idx());
+    glEnd();
+    index++;
+  }
+
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_NORMAL_ARRAY);
+  /*
     glEnable(GL_LIGHTING);
     glShadeModel(GL_FLAT);
 
     glEnable(GL_DEPTH_TEST);
     glEnableClientState(GL_VERTEX_ARRAY);
   
-    unsigned int index = 0;
+
     for (; fIt!=fEnd; ++fIt)
     {
         glLoadName(index);
@@ -145,7 +197,7 @@ QtModelT<M>::render()
         glEnd();
         index++;
      }
-
+*/
     //glBegin(GL_LINES);
     //glLineWidth(2.0f);
     //for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
@@ -324,10 +376,25 @@ template <typename M>
 void
 QtModelT<M>::updateColour()
 {
-  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
+  mesh.request_face_colors();
+  mesh.request_vertex_colors();
+  for (typename M::FaceIter f_it=mesh.faces_begin(); f_it!=mesh.faces_end(); ++f_it)
+  {
+    mesh.set_color(*f_it, OpenMesh::Vec3f(modelColor.redF(), modelColor.blueF(), modelColor.greenF()));
+  }
+  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it)
   {
     mesh.set_color(*v_it, OpenMesh::Vec3f(modelColor.redF(), modelColor.blueF(), modelColor.greenF()));
   }
+}
+
+template <typename M>
+void
+QtModelT<M>::clearColour()
+{
+  mesh.request_vertex_colors();
+  modelColor.setRgb(10, 10, 10);
+  updateColour();
 }
 
 template <typename M>

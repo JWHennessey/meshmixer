@@ -43,11 +43,14 @@ protected:
     QWidget *deleteButton;
     QWidget *pasteButton;
     QWidget *copyButton;
+    QWidget *geoTreeButton;
+    QSpinBox *geoTreeSpinBox;
     void wheelEvent(QGraphicsSceneWheelEvent * wheelEvent);
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
     void keyPressEvent( QKeyEvent* event);
+    void keyReleaseEvent( QKeyEvent* event);
     GLuint PickBuffer[65535];
     bool clicked;
     QPointF clickLocation;
@@ -57,6 +60,8 @@ protected:
     void cut();
     void copy();
     void deleteSection();
+    void softICP(QtModelT<M>* m1, QtModelT<M>* m2);
+    std::vector<size_t> computeSnapRegion(QtModelT<M>* m1, QtModelT<M>* m2);
 
 private:
     int modelCount;
@@ -66,7 +71,7 @@ private:
     void setDefaultLight();
     void updateGTDistances();
     void removeRadio(int radioId);
-    bool mouseTranslate();
+    int mouseRadioSelected();
     MyMesh m_mymesh;
     QColor m_backgroundColor;
     OpenMesh::IO::Options _options;
@@ -100,7 +105,9 @@ private:
     QGroupBox* mouseControlBox;
     QRadioButton* translateRadio;
     QRadioButton* rotateRadio;
-
+    QRadioButton* paintFacesRadio;
+    void paintFaces(QGraphicsSceneMouseEvent *event);
+    bool inPaintingMode;
 
 };
 
