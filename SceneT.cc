@@ -475,19 +475,19 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
       else//if(radioId  != 1)
       {
         //typedef typename M::Point Point;
-        //QVector3D modelRotation = m_rotation;
-        //modelRotation = modelRotation * deg2Rad;
-        //Eigen::AngleAxis<float> aax(modelRotation.x(), Eigen::Vector3f(1, 0, 0));
-        //Eigen::AngleAxis<float> aay(modelRotation.y(), Eigen::Vector3f(0, 1, 0));
-        //Eigen::AngleAxis<float> aaz(modelRotation.z(), Eigen::Vector3f(0, 0, 1));
-        //Eigen::Quaternion<float> rotation = aax * aay * aaz;
+        QVector3D modelRotation = -m_rotation;
+        modelRotation = modelRotation * deg2Rad;
+        Eigen::AngleAxis<float> aax(modelRotation.x(), Eigen::Vector3f(1, 0, 0));
+        Eigen::AngleAxis<float> aay(modelRotation.y(), Eigen::Vector3f(0, 1, 0));
+        Eigen::AngleAxis<float> aaz(modelRotation.z(), Eigen::Vector3f(0, 0, 1));
+        Eigen::Quaternion<float> rotation = aax * aay * aaz;
 
-        //Eigen::Vector3f p = Eigen::Vector3f(delta.x(), delta.y(), 0);
-        //p = rotation * p;
+        Eigen::Vector3f p = Eigen::Vector3f(delta.y(), delta.x(), 0);
+        p = rotation * p;
         //delta = R * delta;
-        models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
-        models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
-        //models[radioId-2]->updateZAxis(p[2] * TANSLATE_SPEED);
+        models[radioId-2]->updateHorizontal(p[1] * TANSLATE_SPEED);
+        models[radioId-2]->updateVertical(p[0] * TANSLATE_SPEED);
+        models[radioId-2]->updateZAxis(p[2] * TANSLATE_SPEED);
         //models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
         //models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
         //models[radioId-2]->updateZAxis(0 * TANSLATE_SPEED);
@@ -523,11 +523,11 @@ SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
     //paintFaces(event);
     //inPaintingMode = true;
   //}else {
-  int index = getClickedMeshIndex(event);
-  if (index >= 0)
-  clickRadioButton(index+2);
-  else
-  clickRadioButton(1);
+  //int index = getClickedMeshIndex(event);
+  //if (index >= 0)
+    //clickRadioButton(index+2);
+  //else
+    //clickRadioButton(1);
   QGraphicsScene::mousePressEvent(event);
   if (event->isAccepted())
     return;
@@ -647,7 +647,7 @@ SceneT<M>::getClickedMeshIndex(QGraphicsSceneMouseEvent *event){
   Nhits = glRenderMode(GL_RENDER);
   selected++;
   }
-  if (models[selected-1] != NULL && Nhits != 0){
+  if (models[selected-1] != NULL){
     return selected-1;
   }else {
     return -1;

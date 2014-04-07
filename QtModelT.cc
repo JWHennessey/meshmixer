@@ -344,11 +344,11 @@ QtModelT<M>::updateRotation(QVector3D& rotationVec)
   Eigen::Vector3f t = Eigen::Vector3f(x, y, z);
 
   typedef typename M::Point Point;
-  QVector3D modelRotation = rotationVec;
-  modelRotation = modelRotation * 0.0174532925;
-  Eigen::AngleAxis<float> aax(modelRotation.x(), Eigen::Vector3f(1, 0, 0));
-  Eigen::AngleAxis<float> aay(modelRotation.y(), Eigen::Vector3f(0, 1, 0));
-  Eigen::AngleAxis<float> aaz(modelRotation.z(), Eigen::Vector3f(0, 0, 1));
+  QVector3D localRotation = rotationVec;
+  localRotation = localRotation * 0.0174532925;
+  Eigen::AngleAxis<float> aax(localRotation.y(), Eigen::Vector3f(1, 0, 0));
+  Eigen::AngleAxis<float> aay(localRotation.x(), Eigen::Vector3f(0, 1, 0));
+  Eigen::AngleAxis<float> aaz(localRotation.z(), Eigen::Vector3f(0, 0, 1));
   Eigen::Quaternion<float> rotation = aax * aay * aaz;
   for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
   {
@@ -358,7 +358,7 @@ QtModelT<M>::updateRotation(QVector3D& rotationVec)
     p = p + t;
     mesh.set_point( *v_it, Point(p[0], p[1], p[2]) );
   }
-  modelRotation += rotationVec;
+  //modelRotation += rotationVec;
 }
 
 template <typename M>
