@@ -27,7 +27,7 @@ public:
     typedef std::vector<std::vector< std::pair< size_t, double > > > MapTable;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
     QRectF boundingRect() const;
-    int number;
+    int modelnumber;
     void calcNormals();
     std::vector<VertexHandle> boundaryPoints;
     PointMatrix boundaryMatrix;

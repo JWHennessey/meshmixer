@@ -143,10 +143,9 @@ QtModelT<M>::render()
     //std::cout << vertical << "\n";
     glPushMatrix();
     glTranslatef(horizontal, vertical, zAxis);
-    //glRotatef(modelRotation.x(), 1, 0, 0);
-    //glRotatef(modelRotation.y(), 0, 1, 0);
-    //glRotatef(modelRotation.z(), 0, 0, 1);
-
+    glRotatef(modelRotation.x(), 1, 0, 0);
+    glRotatef(modelRotation.y(), 0, 1, 0);
+    glRotatef(modelRotation.z(), 0, 0, 1);
   //glEnable(GL_LIGHTING);
   //glShadeModel(GL_FLAT);
   glEnable(GL_DEPTH_TEST);
@@ -158,9 +157,20 @@ QtModelT<M>::render()
   glNormalPointer(GL_FLOAT, 0, mesh.vertex_normals());
   
 
+  glBegin(GL_LINES);
+  glLineWidth(1);
+  glColor3f(255,255,255);
+  glVertex3f(0, 0, 0);
+  glVertex3f(1, 0, 0);
+  glVertex3f(0, 0, 0);
+  glVertex3f(0, 1, 0);
+  glVertex3f(0, 0, 0);
+  glVertex3f(0, 0, 1);
+  glEnd();
   for (; fIt!=fEnd; ++fIt)
   {
     glLoadName(index);
+    //glPushName(index);
     glBegin(GL_TRIANGLES);
     glColor3fv(&mesh.color(*fIt)[0]);
     fvIt = mesh.cfv_iter(*fIt);
@@ -348,7 +358,7 @@ QtModelT<M>::updateRotation(QVector3D& rotationVec)
     p = p + t;
     mesh.set_point( *v_it, Point(p[0], p[1], p[2]) );
   }
-  //modelRotation += rotationVec;
+  modelRotation += rotationVec;
 }
 
 template <typename M>
