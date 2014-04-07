@@ -24,7 +24,7 @@ QtModelT<M>::QtModelT(M& m)
   , zAxis(0.0f)
 {
   mesh = m;
-
+  //meshRotation = QVector3D(0,0,0,1);
   double min_x, max_x, min_y, max_y, min_z, max_z;
   bool first = true;
   boundaryPoints.reserve(mesh.n_vertices()/2);
@@ -141,22 +141,19 @@ QtModelT<M>::render()
     //std::cout << "Render" << "\n";
     //std::cout << horizontal << "\n";
     //std::cout << vertical << "\n";
+    float matrix[16];
+    glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
+    //glPopMatrix();
     glPushMatrix();
+    glLoadIdentity();
     glTranslatef(horizontal, vertical, zAxis);
-    glRotatef(modelRotation.x(), 1, 0, 0);
-    glRotatef(modelRotation.y(), 0, 1, 0);
-    glRotatef(modelRotation.z(), 0, 0, 1);
+    glMultMatrixf(matrix);
   //glEnable(GL_LIGHTING);
   //glShadeModel(GL_FLAT);
-  glEnable(GL_DEPTH_TEST);
   
-  glEnableClientState(GL_VERTEX_ARRAY);
-  glVertexPointer(3, GL_FLOAT, 0, mesh.points());
-  
-  glEnableClientState(GL_NORMAL_ARRAY);
-  glNormalPointer(GL_FLOAT, 0, mesh.vertex_normals());
-  
-
+  glRotatef(meshRotation.x(), 1, 0, 0);
+  glRotatef(meshRotation.y(), 0, 1, 0);
+  glRotatef(meshRotation.z(), 0, 0, 1);
   glBegin(GL_LINES);
   glLineWidth(1);
   glColor3f(255,255,255);
@@ -167,6 +164,12 @@ QtModelT<M>::render()
   glVertex3f(0, 0, 0);
   glVertex3f(0, 0, 1);
   glEnd();
+  
+  glEnable(GL_DEPTH_TEST);
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glVertexPointer(3, GL_FLOAT, 0, mesh.points());
+  glEnableClientState(GL_NORMAL_ARRAY);
+  glNormalPointer(GL_FLOAT, 0, mesh.vertex_normals());
   for (; fIt!=fEnd; ++fIt)
   {
     glLoadName(index);
@@ -185,41 +188,9 @@ QtModelT<M>::render()
 
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);
-  /*
-    glEnable(GL_LIGHTING);
-    glShadeModel(GL_FLAT);
-
-    glEnable(GL_DEPTH_TEST);
-    glEnableClientState(GL_VERTEX_ARRAY);
-  
-
-    for (; fIt!=fEnd; ++fIt)
-    {
-        glLoadName(index);
-        glBegin(GL_TRIANGLES);
-        glNormal3fv( &mesh.normal(*fIt)[0] );
-        fvIt = mesh.cfv_iter(*fIt);
-        glVertex3fv( &mesh.point(*fvIt)[0] );
-        ++fvIt;
-        glVertex3fv( &mesh.point(*fvIt)[0] );
-        ++fvIt;
-        glVertex3fv( &mesh.point(*fvIt)[0] );
-        glEnd();
-        index++;
-     }
-*/
-    //glBegin(GL_LINES);
-    //glLineWidth(2.0f);
-    //for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
-    //{
-      //glColor3b (255, 255, 255);
-      //glVertex3f(mesh.point(*v_it)[0], mesh.point(*v_it)[1], mesh.point(*v_it)[2]);
-      //glVertex3f(mesh.point(*v_it)[0]+mesh.normal(*v_it)[0], mesh.point(*v_it)[1]+mesh.normal(*v_it)[1], mesh.point(*v_it)[2]+mesh.normal(*v_it)[2]);
-
-    //}
-    //glEnd();
-
-    glPopMatrix();
+  glPopMatrix();
+  //glLoadMatrixf(matrix);
+  //glPushMatrix();
 
 }
 
@@ -227,6 +198,7 @@ template <typename M>
 void
 QtModelT<M>::applyTransformations()
 {
+  /*
   typedef typename M::Point Point;
   modelRotation = modelRotation * deg2Rad;
   Eigen::AngleAxis<float> aax(modelRotation.x(), Eigen::Vector3f(1, 0, 0));
@@ -247,6 +219,7 @@ QtModelT<M>::applyTransformations()
   modelRotation.setX(0.0f);
   modelRotation.setY(0.0f);
   modelRotation.setZ(0.0f);
+   */
 }
 
 template <typename M>
@@ -307,6 +280,7 @@ template <typename M>
 void
 QtModelT<M>::updateTransformations(Matrix<double, 3, 3>& R, double x, double y, double z)
 {
+  /*
   typedef typename M::Point Point;
   for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
   {
@@ -316,6 +290,7 @@ QtModelT<M>::updateTransformations(Matrix<double, 3, 3>& R, double x, double y, 
     mesh.set_point( *v_it, mesh.point(*v_it) - Point(x, y, z) );
   }
   render();
+   */
 }
 
 
@@ -330,7 +305,8 @@ template <typename M>
 void
 QtModelT<M>::updateRotation(QVector3D& rotationVec)
 {
-  double x, y, z = 0.0;
+  /*
+  double x = 0.0, y = 0.0, z = 0.0;
   for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
   {
     x += mesh.point(*v_it)[0];
@@ -358,7 +334,8 @@ QtModelT<M>::updateRotation(QVector3D& rotationVec)
     p = p + t;
     mesh.set_point( *v_it, Point(p[0], p[1], p[2]) );
   }
-  modelRotation += rotationVec;
+   */
+  meshRotation += rotationVec;
 }
 
 template <typename M>
@@ -411,6 +388,7 @@ template <typename M>
 void
 QtModelT<M>::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+  /*
   std::cout << "paint" << "\n";
   painter->drawRect(boundingRect());
   painter->beginNativePainting();
@@ -440,7 +418,7 @@ QtModelT<M>::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
   glPopMatrix();
 
   painter->endNativePainting();
-
+*/
 }
 
 

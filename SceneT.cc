@@ -32,7 +32,7 @@ template <typename M>
 SceneT<M>::SceneT()
 : m_backgroundColor(0.0f, 0.0f, 0.0f)
 , m_distance(4.5f)
-, m_vertical(-0.1f)
+, m_vertical(0.0f)
 , m_horizontal(0.0f)
 , TANSLATE_SPEED(0.01f)
 , deg2Rad(0.0174532925)
@@ -214,12 +214,21 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
 
     glEnable(GL_LIGHTING);
     glShadeModel(GL_FLAT);
-    
     glTranslatef(m_horizontal, m_vertical, -m_distance);
     glRotatef(m_rotation.x(), 1, 0, 0);
     glRotatef(m_rotation.y(), 0, 1, 0);
     glRotatef(m_rotation.z(), 0, 0, 1);
-
+    glBegin(GL_LINES);
+    glLineWidth(2);
+    glColor3f(255,255,255);
+    glVertex3f(0, 0, 0);
+    glVertex3f(2, 0, 0);
+    glVertex3f(0, 0, 0);
+    glVertex3f(0, 2, 0);
+    glVertex3f(0, 0, 0);
+    glVertex3f(0, 0, 2);
+    glEnd();
+    
     glEnable(GL_MULTISAMPLE);
     glColorMaterial ( GL_FRONT_AND_BACK, GL_EMISSION ) ;
     glEnable( GL_COLOR_MATERIAL ) ;
@@ -229,7 +238,6 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
     setDefaultMaterial();
     setDefaultLight();
     glDisable(GL_MULTISAMPLE);
-
     glPopMatrix();
 
     glMatrixMode(GL_PROJECTION);
@@ -475,18 +483,22 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
       else//if(radioId  != 1)
       {
         //typedef typename M::Point Point;
-        //QVector3D modelRotation = m_rotation;
-        //modelRotation = modelRotation * deg2Rad;
-        //Eigen::AngleAxis<float> aax(modelRotation.x(), Eigen::Vector3f(1, 0, 0));
-        //Eigen::AngleAxis<float> aay(modelRotation.y(), Eigen::Vector3f(0, 1, 0));
-        //Eigen::AngleAxis<float> aaz(modelRotation.z(), Eigen::Vector3f(0, 0, 1));
-        //Eigen::Quaternion<float> rotation = aax * aay * aaz;
+        QVector3D modelRotation = m_rotation;
+        modelRotation = modelRotation * deg2Rad;
+        Eigen::AngleAxis<float> aax(modelRotation.x(), Eigen::Vector3f(1, 0, 0));
+        Eigen::AngleAxis<float> aay(modelRotation.y(), Eigen::Vector3f(0, 1, 0));
+        Eigen::AngleAxis<float> aaz(modelRotation.z(), Eigen::Vector3f(0, 0, 1));
+        Eigen::Quaternion<float> rotation = aax * aay * aaz;
 
-        //Eigen::Vector3f p = Eigen::Vector3f(delta.x(), delta.y(), 0);
-        //p = rotation * p;
+        Eigen::Vector3f p = Eigen::Vector3f(delta.x(), delta.y(), 0);
+        p = rotation.inverse() * p;
+        std::cout << m_rotation.x() << " " << m_rotation.y() << " " << m_rotation.z() << " de\n";
+        std::cout << p[0] << " " << p[1] << " " << p[2] << "\n";
         //delta = R * delta;
         models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
         models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
+        //models[radioId-2]->updateHorizontal(p[0] * TANSLATE_SPEED);
+        //models[radioId-2]->updateVertical(p[1] * TANSLATE_SPEED);
         //models[radioId-2]->updateZAxis(p[2] * TANSLATE_SPEED);
         //models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
         //models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
