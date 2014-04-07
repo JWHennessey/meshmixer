@@ -55,7 +55,7 @@ public:
     void clearColour();
 
 private:
-    QVector3D modelRotation;
+    QVector3D meshRotation;
     QColor modelColor;
     GLfloat vertical;
     GLfloat horizontal;
