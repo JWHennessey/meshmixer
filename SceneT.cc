@@ -369,6 +369,7 @@ SceneT<M>::loadMesh(const QString filePath)
     else
     {
       models[modelCount] = new QtModelT<M>(m_mymesh);
+      models[modelCount]->modelnumber = modelCount;
       modelCount++;
       switch(modelCount)
       {
@@ -461,6 +462,9 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     QPointF delta = event->scenePos() - event->lastScenePos();
     const int radioId = whichRadioButton();
     QVector3D angularImpulse = QVector3D(delta.y(), delta.x(), 0) * 0.1;
+    if (radioId == 0){
+      
+    }
     if(mouseRadioSelected() == 1)
     {
       //if(radioId  == 1){
@@ -519,6 +523,9 @@ SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
     //paintFaces(event);
     //inPaintingMode = true;
   //}else {
+  int index = getClickedMeshIndex(event);
+  if (index >= 0)
+  clickRadioButton(index+2);
   QGraphicsScene::mousePressEvent(event);
   if (event->isAccepted())
     return;
@@ -601,6 +608,52 @@ SceneT<M>::keyPressEvent( QKeyEvent* event)
 }
 
 template <typename M>
+int
+SceneT<M>::getClickedMeshIndex(QGraphicsSceneMouseEvent *event){
+  int selected = 0;
+  GLuint Nhits = 0;
+  while (models[selected] != NULL && Nhits == 0){
+  glRenderMode(GL_SELECT);
+  glMatrixMode(GL_PROJECTION);
+  glPushMatrix();
+  glLoadIdentity();
+  
+  GLint viewport[4];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+  gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.01, 0.1, viewport);
+  gluPerspective(70, width() / height(), 0.01, 1000);
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+  glTranslatef(m_horizontal, m_vertical, -m_distance);
+  glRotatef(m_rotation.x(), 1, 0, 0);
+  glRotatef(m_rotation.y(), 0, 1, 0);
+  glRotatef(m_rotation.z(), 0, 0, 1);
+  
+  glEnable(GL_MULTISAMPLE);
+  glInitNames();
+  glPushName( 0xffffffff );
+  if (models[selected] != NULL) models[selected]->render();
+  std::cout << selected << "q\n";
+  glDisable(GL_MULTISAMPLE);
+  
+  glPopMatrix();
+  
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+  
+  Nhits = glRenderMode(GL_RENDER);
+  selected++;
+  }
+  if (models[selected-1] != NULL){
+    return selected-1;
+  }else {
+    return -1;
+  }
+
+}
+
+template <typename M>
 void
 SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
 {
@@ -655,6 +708,36 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
     } 
 
 
+}
+
+template <typename M>
+void
+SceneT<M>::clickRadioButton(int index){
+  switch (index) {
+    case 1:
+      radio1->click();
+      break;
+    case 2:
+      radio2->click();
+      break;
+    case 3:
+      radio3->click();
+      break;
+    case 4:
+      radio4->click();
+      break;
+    case 5:
+      radio5->click();
+      break;
+    case 6:
+      radio6->click();
+      break;
+    case 7:
+      radio7->click();
+      break;
+    default:
+      break;
+  }
 }
 
 template <typename M>
