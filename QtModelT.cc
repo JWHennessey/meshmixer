@@ -13,7 +13,6 @@
 #include <math.h> 
 #include <stdlib.h>
 
-
 template <typename M>
 QtModelT<M>::QtModelT(M& m)
   : modelColor(0, 0, 0)
@@ -516,6 +515,7 @@ void
 QtModelT<M>::createGeoTree(int k)
 {
   std::cout << "Create GeoTree with " << k << " patches" << "\n";
+  geoTree = new GeoTreeT<M>(&mesh, k);
 }
 
 

@@ -12,7 +12,7 @@
 #include <QVector3D>
 #include <eigen3/Eigen/Dense>
 #include <nanoflann.hpp>
-
+#include "GeoTreeT.hh"
 //#include <flann/io/hdf5.h>
 
 using namespace Qt;
@@ -62,6 +62,7 @@ private:
     GLfloat horizontal;
     GLfloat depth;
     GLfloat zAxis;
+    GeoTreeT<M> *geoTree;
     const float deg2Rad;
     void findBoundaryVertices();
 };
