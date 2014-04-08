@@ -119,12 +119,12 @@ GeoTreeT<M>::createPatches()
 {
   for(int i=0; i<2; i++)
   {
+    clearPatches();
     updatePriorityQueues();
     std::cout << "Priority Queues Done" << "\n";
     assignFaces();
     std::cout << "Assign Faces Done" << "\n";
     updateCentroids();
-    clearPatches();
     std::cout << "Update Centroids Done" << "\n";
   }
 }
