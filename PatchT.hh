@@ -13,12 +13,13 @@ public:
   void updateCentroid();
   void updateNormal();
   void addVertex(Vec v);
+  void addFaceHandle(int handle);
+  void clear();
   QColor patchColour;
   std::vector<int> faceHandles;
   Vec centroid;
   Vec normal;
   std::vector<Vec> verticies;
-
 };
 
 

@@ -8,6 +8,7 @@
 #include <QVector>
 #include "PatchT.hh"
 #include <queue>
+#include "FacePriorityT.hh"
 
 template <typename M>
 class GeoTreeT
@@ -21,12 +22,15 @@ public:
 private:
     int noPatches;
     std::vector<PatchT<M>*> patches;
-    std::vector<std::priority_queue<float, std::vector<int> > > priorityQueues;
+    std::vector<std::priority_queue<FacePriorityT<M>*, std::vector<FacePriorityT<M>* >, FacePriorityCompareT<M> >* > priorityQueues;
     void initPatches();
-    Vec getFaceCentroid(typename M::FaceHandle fh);
+    void createPatches();
     void updatePatchColours();
-    void createPriorityQueues();
-
+    void updatePriorityQueues();
+    void assignFaces();
+    void updateCentroids();
+    void clearPatches();
+    Vec getFaceCentroid(typename M::FaceHandle fh);
 };
 
 
