@@ -22,7 +22,7 @@ GeoTreeT<M>::GeoTreeT(M *m, int k)
   for(int i = 0; i<noPatches; i++)
   {
     std::priority_queue<FacePriorityT<M>*, std::vector<FacePriorityT<M>* >, FacePriorityCompareT<M> > queue;
-    priorityQueues.push_back(&queue);
+    priorityQueues[i] = queue;
 
   }
   std::cout << "Seeds Chosen" << "\n";
@@ -46,13 +46,11 @@ GeoTreeT<M>::initPatches()
         Vec centroid = getFaceCentroid(face);
         Vec normal = Vec(mesh->normal(face)[0], mesh->normal(face)[1], mesh->normal(face)[2]);
         patches.push_back(new PatchT<M>(centroid, normal, seed));
-        for (typename M::FaceVertexIter vf_it=mesh->fv_iter(face); vf_it; ++vf_it)
-        {
-          patches.back()->addVertex(Vec(mesh->point(*vf_it)[0], mesh->point(*vf_it)[1], mesh->point(*vf_it)[2]));
-        }
         notUnique = false;
       }
     }
+    //std::cout << "No. Faces on patch " << i << " - " << patches[i]->faceHandles.size() << "\n";
+    //std::cout << "No. Vertices on patch " << i << " - " << patches[i]->verticies.size() << "\n";
   }
 }
 
@@ -92,24 +90,30 @@ GeoTreeT<M>::updatePriorityQueues()
 
   for(int i = 0; i<noPatches; i++)
   {
-    //std::priority_queue<FacePriorityT<M>*, std::vector<FacePriorityT<M>* >, FacePriorityCompareT<M> > queue;
-    //priorityQueues.push_back(&queue);
     for (int f_it = 0; f_it < mesh->n_faces(); f_it++)
     {
       typename M::FaceHandle face = mesh->face_handle(f_it);
       Vec centroid = getFaceCentroid(face);
       Vec normal = Vec(mesh->normal(face)[0], mesh->normal(face)[1], mesh->normal(face)[2]);
       float dist = (centroid - patches[i]->centroid).norm();
-      float normAngle = normal.dot(patches[i]->normal);
+      float dot = normal.dot(patches[i]->normal);
+      normal.normalize();
+      patches[i]->normal.normalize();
+      float normDist = (normal - patches[i]->normal).norm() / 10.0f;
+      std::cout << "Normal Dist " << normDist << "\n";
+      std::cout << "Eucld Dist " << dist << "\n";
+
+      //float normAngle = dot / prodNorms;
+      //normAngle = sqrt(normAngle * normAngle);
       //This might not be right but I think parallel vectors will have
       //a value of 1 and the others will be 1.
-      float cost = dist * normAngle;
+      //float paraDist;
+      //std::cout << normAngle << "\n";
+      float cost = (dist); //+ normDist; //+ (1 - normAngle);// + (normAngle);
       FacePriorityT<M>* fp = new FacePriorityT<M>(cost, f_it);
-      priorityQueues.back()->push(fp);
-      //std::cout << "PQ Size" << priorityQueues[i]->size() << "\n";
-      //std::cout << "PQ Top Cost" << priorityQueues[i]->top()->cost << "\n";
-      //std::cout << priorityQueues.back()->size() << "\n";
+      priorityQueues[i].push(fp);
     }
+    std::cout << "PriorityQueue " << i << "  size after created " << priorityQueues[i].size() << "\n";
   }
 }
 
@@ -117,8 +121,13 @@ template <typename M>
 void
 GeoTreeT<M>::createPatches()
 {
-  for(int i=0; i<2; i++)
+  std::cout << "No Verticies on Mesh " << mesh->n_vertices() << "\n";
+  std::cout << "No faces on Mesh " << mesh->n_faces() << "\n";
+  bool notConverged = true;
+  double diff = 100.0;
+  while(notConverged)
   {
+    PointMatrix oldCentroids = getCentroids();
     clearPatches();
     updatePriorityQueues();
     std::cout << "Priority Queues Done" << "\n";
@@ -126,7 +135,33 @@ GeoTreeT<M>::createPatches()
     std::cout << "Assign Faces Done" << "\n";
     updateCentroids();
     std::cout << "Update Centroids Done" << "\n";
+    double newDiff = convergenceTest(oldCentroids);
+    std::cout << "Difference " << newDiff << "\n";
+    if(newDiff > diff || newDiff < 0.001)
+      notConverged = false;
+    else
+      diff = newDiff;
   }
+}
+
+template <typename M>
+PointMatrix
+GeoTreeT<M>::getCentroids()
+{
+  PointMatrix centroids(noPatches, 3);
+  for(int i = 0; i<noPatches; i++)
+  {
+    centroids.row(i) = patches[i]->centroid;
+  }
+  return centroids;
+}
+
+template <typename M>
+double
+GeoTreeT<M>::convergenceTest(PointMatrix old)
+{
+  PointMatrix n = getCentroids();
+  return (n - old).norm();
 }
 
 template <typename M>
@@ -143,18 +178,6 @@ template <typename M>
 void
 GeoTreeT<M>::assignFaces()
 {
-  //for(int i = 0; i<noPatches; i++)
-  //{
-    //std::cout << i << "\n";
-    //std::cout << priorityQueues[i]->size() << "\n";
-    //while(!priorityQueues[i]->empty())
-    //{
-      //FacePriorityT<M>* fp = priorityQueues[i]->top();
-      //std::cout << fp->faceId << "  " << fp->cost << " \n";
-      //priorityQueues[i]->pop();
-    //}
-  //}
-  int counter = 0;
   std::vector<int> assignedFaces;
   bool allFacesAssigned = false;
   while(!allFacesAssigned)
@@ -164,48 +187,37 @@ GeoTreeT<M>::assignFaces()
       bool itemTaken = false;
       while(!itemTaken)
       {
-        if(priorityQueues[i]->empty())
+        if(priorityQueues[i].empty())
         {
-          //std::cout << "Queue Empty" << "\n";
-          //std::cout << "No. Faces " << mesh->n_faces() << "\n";
-          //std::cout << "Assigned Faces " << assignedFaces.size() << "\n";
-          ////for(int j = 0; j<assignedFaces.size(); j++)
-          ////{
-            ////std::cout << assignedFaces[j] << "\n";
-          ////}
           itemTaken = true;
         }
         else
         {
-          FacePriorityT<M>* fp = priorityQueues[i]->top();
-          //std::cout << "Face Selected" << "\n";
-          //if face isn't already assigned
-          if(std::find(assignedFaces.begin(), assignedFaces.end(), fp->faceId) != assignedFaces.end()) 
+          FacePriorityT<M>* fp = priorityQueues[i].top();
+          // if face isn't already assigned
+          if(std::find(assignedFaces.begin(), assignedFaces.end(), fp->faceId) == assignedFaces.end()) 
           {
-            //std::cout << "Face already assigned" << "\n";
-          }
-          else
-          {
-            //std::cout << "Face assigned" << "\n";
+            // std::cout << "Face assigned" << "\n";
             patches[i]->addFaceHandle(fp->faceId);
             assignedFaces.push_back(fp->faceId);
             typename M::FaceHandle face = mesh->face_handle(fp->faceId);
             for (typename M::FaceVertexIter vf_it=mesh->fv_iter(face); vf_it; ++vf_it)
             {
-              patches.back()->addVertex(Vec(mesh->point(*vf_it)[0], mesh->point(*vf_it)[1], mesh->point(*vf_it)[2]));
+              patches[i]->addVertex(Vec(mesh->point(*vf_it)[0], mesh->point(*vf_it)[1], mesh->point(*vf_it)[2]));
             }
             itemTaken = true;
-
           }
-          priorityQueues[i]->pop();
+          priorityQueues[i].pop();
         }
       }
     }
-    //std::cout << mesh->n_faces() << "\n";
-    //std::cout << assignedFaces.size() << "\n";
-    //std::cout << mesh->n_faces() - assignedFaces.size() << "\n";
-    //allFacesAssigned = true;
     allFacesAssigned = assignedFaces.size() >= mesh->n_faces();
+  }
+  for(int i = 0; i<noPatches; i++)
+  {
+    std::cout << "PriorityQueue " << i << " size after faces assigned " << priorityQueues[i].size() << "\n";
+    std::cout << "Patch " << i << " no. face handles " << patches[i]->faceHandles.size() << "\n";
+    std::cout << "Patch " << i << " no. verticies " << patches[i]->verticies.size() << "\n";
   }
 }
 

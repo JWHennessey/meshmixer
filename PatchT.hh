@@ -3,6 +3,7 @@
 
 #include "MyMesh.hh"
 #include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Eigenvalues>
 
 template <typename M>
 class PatchT

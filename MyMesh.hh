@@ -13,7 +13,6 @@ struct MyTraits : public OpenMesh::DefaultTraits
                     OpenMesh::Attributes::Color );
 
 
-
   HalfedgeAttributes(OpenMesh::Attributes::PrevHalfedge);
 };
 
@@ -22,6 +21,5 @@ typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits>  MyMesh;
 typedef MyMesh::Point Point;
 typedef Eigen::MatrixX3d PointMatrix;
 typedef Eigen::Vector3d Vec;
-
 
 #endif
