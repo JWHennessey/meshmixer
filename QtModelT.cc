@@ -144,35 +144,32 @@ QtModelT<M>::select(int faceNumber){
     {
       //std::cout << "Not Connected" << "\n";
       stroke.clear();
+      strokeVertices.clear();
       clearColour();
       addToStroke(faceNumber);
     }
 }
 
-/**
- *
- *
- *There should be some test to check that the faces are connected but I can't
- get it to work.
- *
- */
+
 template <typename M>
 bool
 QtModelT<M>::facesConnected(int f1, int f2){
-  return true;
-  //typename M::FaceHandle fh1 = mesh.face_handle(f1);
-  //typename M::FaceHandle fh2 = mesh.face_handle(f2);
-  //for (typename M::FaceVertexIter vf_it1=mesh.fv_iter(fh1); vf_it1; ++vf_it1)
-  //{
-    //for (typename M::FaceVertexIter vf_it2=mesh.fv_iter(fh2); vf_it2; ++vf_it2)
-    //{
+  typename M::FaceHandle fh1 = mesh.face_handle(f1);
+  typename M::FaceHandle fh2 = mesh.face_handle(f2);
+  for (typename M::FaceVertexIter vf_it1=mesh.fv_iter(fh1); vf_it1; ++vf_it1)
+  {
+    for (typename M::FaceVertexIter vf_it2=mesh.fv_iter(fh2); vf_it2; ++vf_it2)
+    {
       //std::cout << mesh.point(*vf_it1) << "\n";
       //std::cout << mesh.point(*vf_it2) << "\n";
-      //if(mesh.point(*vf_it1) == mesh.point(*vf_it2))
-        //return true;
-    //}
-  //}
-  //return false;
+      if(mesh.point(*vf_it1) == mesh.point(*vf_it2))
+      {
+        strokeVertices.push_back(mesh.point(*vf_it1));
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 template <typename M>
@@ -234,7 +231,7 @@ QtModelT<M>::render()
   {
     glBegin(GL_LINES);
     glLineWidth(5.0f);
-    glColor3b (255, 0, 0);
+    glColor3b (0, 255, 0);
     int to;
     int from = dest;
     while(from != source)
@@ -245,6 +242,11 @@ QtModelT<M>::render()
       glVertex3f(mesh.point(from_vh)[0], mesh.point(from_vh)[1], mesh.point(from_vh)[2]);
       glVertex3f(mesh.point(to_vh)[0], mesh.point(to_vh)[1], mesh.point(to_vh)[2]);
       from = to;
+    }
+    for(int i = 0; i<strokeVertices.size()-1; i++)
+    {
+        glVertex3f(strokeVertices[i][0], strokeVertices[i][1], strokeVertices[i][2]);
+        glVertex3f(strokeVertices[i+1][0], strokeVertices[i+1][1], strokeVertices[i+1][2]);
     }
     glEnd();
   }
@@ -465,10 +467,13 @@ template <typename M>
 void
 QtModelT<M>::clearColour()
 {
+  
   mesh.request_vertex_colors();
   modelColor.setRgb(10, 10, 10);
   updateColour();
   dest = -1;
+  stroke.clear();
+  strokeVertices.clear();
 }
 
 template <typename M>
@@ -658,7 +663,7 @@ QtModelT<M>::cost(int u, int v)
   typename M::VertexHandle u_vh = mesh.vertex_handle(u);
   typename M::VertexHandle v_vh = mesh.vertex_handle(v);
   double dist = (mesh.point(v_vh) - mesh.point(u_vh)).norm();
-  dist += inverseGeodesic(v);
+  //dist += inverseGeodesic(v);
   dist += normalDistance(v);
   return dist;
 }

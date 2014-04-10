@@ -72,6 +72,7 @@ private:
     const float deg2Rad;
     void findBoundaryVertices();
     std::vector<int> stroke;
+    std::vector<Point> strokeVertices;
     double cost(int u, int v);
     int dest;
     int source;

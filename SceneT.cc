@@ -681,9 +681,6 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
       }
       models[selected]->select(item);
     }
-
-
-
 }
 
 template <typename M>
