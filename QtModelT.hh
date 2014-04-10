@@ -13,6 +13,9 @@
 #include <eigen3/Eigen/Dense>
 #include <nanoflann.hpp>
 #include "GeoTreeT.hh"
+#include <queue>
+#include <unordered_set>
+
 //#include <flann/io/hdf5.h>
 
 using namespace Qt;
@@ -54,8 +57,11 @@ public:
     void scale(float alpha);
     void clearColour();
     void createGeoTree(int k);
-
+    std::vector<int> getStroke();
+    void cut();
 private:
+    bool facesConnected(int f1, int f2);
+    void addToStroke(int f);
     QVector3D modelRotation;
     QColor modelColor;
     GLfloat vertical;
@@ -65,7 +71,30 @@ private:
     GeoTreeT<M> *geoTree;
     const float deg2Rad;
     void findBoundaryVertices();
+    std::vector<int> stroke;
+    double cost(int u, int v);
+    int dest;
+    int source;
+    std::vector<int> prev;
 };
+
+struct Dist
+{
+    float dist;
+    int id;
+
+    Dist(int i, float d) : id(i), dist(d)
+    {
+      //
+    }
+
+    bool operator<(const struct Dist& other) const
+    {
+        //Your priority logic goes here
+        return dist > other.dist;
+    }
+};
+
 
 #if defined(OM_INCLUDE_TEMPLATES) && !defined(MODEL_CC)
 #  define SCENE_TEMPLATES

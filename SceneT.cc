@@ -37,6 +37,7 @@ SceneT<M>::SceneT()
 , TANSLATE_SPEED(0.01f)
 , deg2Rad(0.0174532925)
 , inPaintingMode(false)
+, mouseClicked(false)
 {
   modelCount = 0;
   QWidget *controls = createDialog(tr("Controls"));
@@ -468,7 +469,7 @@ void
 SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
   QGraphicsScene::mouseMoveEvent(event);
-  if(inPaintingMode) paintFaces(event);
+ if(inPaintingMode && mouseClicked) paintFaces(event); 
   
   if (event->isAccepted())
     return;
@@ -534,6 +535,7 @@ SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
     //paintFaces(event);
     //inPaintingMode = true;
   //}else {
+  mouseClicked = true;
   QGraphicsScene::mousePressEvent(event);
   if (event->isAccepted())
     return;
@@ -548,13 +550,13 @@ void
 SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
 
+  mouseClicked = false;
   QGraphicsScene::mouseReleaseEvent(event);
   if (event->isAccepted())
     return;
   const int delta = m_time.elapsed() - m_mouseEventTime;
   event->accept();
   update();
-  inPaintingMode = false;
 }
 
 template <typename M>
@@ -641,7 +643,7 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
     glInitNames();
     glPushName( 0xffffffff );
     if (models[selected] != NULL) models[selected]->render();
-    std::cout << selected << "q\n";
+    //std::cout << selected << "q\n";
     glDisable(GL_MULTISAMPLE);
     
     glPopMatrix();
@@ -651,19 +653,19 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
   
     GLuint Nhits = glRenderMode(GL_RENDER);
     clicked == false;
-    std::cout << Nhits << " y\n";
+    //std::cout << Nhits << " y\n";
     if (Nhits > 0){
       GLuint item;
       GLuint front;
       for(size_t i = 0, index = 0; i < Nhits; i++ )
       {
         GLuint nitems = PickBuffer[index++];
-        std::cout << index << " x" << index+1 << " \n";
+        //std::cout << index << " x" << index+1 << " \n";
         index+= 2;
         for(size_t j = 0; j < nitems; j++ )
         {
           item = PickBuffer[index++];
-          std::cout << Nhits << " z" << item << " \n";
+          //std::cout << Nhits << " z" << item << " \n";
         }
         models[selected]->select(item);
       }
@@ -826,6 +828,11 @@ void
 SceneT<M>::cut()
 {
   std::cout << "Cut Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId != 1)
+  {
+    models[radioId-2]->cut();
+  }
 }
 
 template <typename M>

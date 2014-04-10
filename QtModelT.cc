@@ -21,6 +21,7 @@ QtModelT<M>::QtModelT(M& m)
   , depth(0.0f)
   , deg2Rad(0.0174532925)
   , zAxis(0.0f)
+  , dest(-1)
 {
   mesh = m;
 
@@ -38,9 +39,9 @@ QtModelT<M>::QtModelT(M& m)
       max_z = mesh.point(*v_it)[2];
       first = false;
     }
-    
+
     if (mesh.is_boundary(*v_it)) boundaryPoints.push_back(*v_it);
-    
+
     if(mesh.point(*v_it)[0] < min_x )
       min_x = mesh.point(*v_it)[0];
     else if(mesh.point(*v_it)[0] > max_x )
@@ -123,9 +124,62 @@ QtModelT<M>::~QtModelT()
 
 template <typename M>
 void
-QtModelT<M>::select(int faceNumber){
-  typename M::FaceHandle face = mesh.face_handle(faceNumber);
+QtModelT<M>::addToStroke(int f){
+  stroke.push_back(f);
+  typename M::FaceHandle face = mesh.face_handle(f);
   mesh.set_color(face, typename M::Color(0, 255, 255));
+}
+
+template <typename M>
+void
+QtModelT<M>::select(int faceNumber){
+    if(stroke.empty())
+      addToStroke(faceNumber);
+    else if(facesConnected(stroke.back(), faceNumber))
+    { 
+      //std::cout << "Connected" << "\n";
+      addToStroke(faceNumber);
+    }
+    else
+    {
+      //std::cout << "Not Connected" << "\n";
+      stroke.clear();
+      clearColour();
+      addToStroke(faceNumber);
+    }
+}
+
+/**
+ *
+ *
+ *There should be some test to check that the faces are connected but I can't
+ get it to work.
+ *
+ */
+template <typename M>
+bool
+QtModelT<M>::facesConnected(int f1, int f2){
+  return true;
+  //typename M::FaceHandle fh1 = mesh.face_handle(f1);
+  //typename M::FaceHandle fh2 = mesh.face_handle(f2);
+  //for (typename M::FaceVertexIter vf_it1=mesh.fv_iter(fh1); vf_it1; ++vf_it1)
+  //{
+    //for (typename M::FaceVertexIter vf_it2=mesh.fv_iter(fh2); vf_it2; ++vf_it2)
+    //{
+      //std::cout << mesh.point(*vf_it1) << "\n";
+      //std::cout << mesh.point(*vf_it2) << "\n";
+      //if(mesh.point(*vf_it1) == mesh.point(*vf_it2))
+        //return true;
+    //}
+  //}
+  //return false;
+}
+
+template <typename M>
+std::vector<int>
+QtModelT<M>::getStroke()
+{
+  return stroke;
 }
 
 template <typename M>
@@ -174,6 +228,26 @@ QtModelT<M>::render()
 
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);
+
+
+  if(dest >= 0)
+  {
+    glBegin(GL_LINES);
+    glLineWidth(5.0f);
+    glColor3b (255, 0, 0);
+    int to;
+    int from = dest;
+    while(from != source)
+    {
+      to = prev[from];
+      typename M::VertexHandle to_vh = mesh.vertex_handle(to);
+      typename M::VertexHandle from_vh = mesh.vertex_handle(from);
+      glVertex3f(mesh.point(from_vh)[0], mesh.point(from_vh)[1], mesh.point(from_vh)[2]);
+      glVertex3f(mesh.point(to_vh)[0], mesh.point(to_vh)[1], mesh.point(to_vh)[2]);
+      from = to;
+    }
+    glEnd();
+  }
   /*
     glEnable(GL_LIGHTING);
     glShadeModel(GL_FLAT);
@@ -507,7 +581,6 @@ QtModelT<M>::scale(float alpha)
   {
     mesh.set_point( *v_it, Point(alpha*mesh.point(*v_it)));
   }
-
 }
 
 template<typename M>
@@ -516,6 +589,83 @@ QtModelT<M>::createGeoTree(int k)
 {
   std::cout << "Create GeoTree with " << k << " patches" << "\n";
   geoTree = new GeoTreeT<M>(&mesh, k);
+}
+
+template<typename M>
+void
+QtModelT<M>::cut()
+{
+  typename M::FaceHandle face = mesh.face_handle(stroke.front());
+  typename M::FaceVertexIter fv_it = mesh.fv_iter(face);
+  source = fv_it.handle().idx();
+  double distances[mesh.n_vertices()];
+  int previous[mesh.n_vertices()];
+  std::unordered_set<int> q;
+  distances[source] = 0;
+  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
+  {
+    int v = v_it.handle().idx();
+    if(v != source)
+    {
+      distances[v] = 1000.0;
+      previous[v] = NULL;
+    }
+    q.insert(v);
+  }
+  //std::cout << "Setup"<< "\n";
+  //std::cout << q.size() << "\n";
+  //std::cout << distances << "\n";
+  while(!q.empty())
+  {
+    double min = 1001.0;
+    int u;
+    for ( auto i = q.begin(); i != q.end(); ++i )
+    {
+      if(distances[*i] < min)
+      {
+        min = distances[*i];
+        u = *i;
+      }
+    }
+    min = 1001.0;
+    //std::cout << "Q Size Before " << q.size() << "\n";
+    //std::cout << "Removed " << u << "\n";
+    q.erase(u);
+    //std::cout << "Q Size After" << q.size() << "\n";
+    typename M::VertexHandle vh = mesh.vertex_handle(u);
+    for (typename M::VertexVertexIter vv_it=mesh.vv_iter(vh); vv_it; ++vv_it)
+    {
+      int v = vv_it.handle().idx();
+      float alt = distances[u] + cost(u, v);
+      if(alt < distances[v])
+      {
+        distances[v] = alt;
+        previous[v] = u;
+        //decrease-key v in Q;
+      }
+    }
+    
+    //std::cout << previous << "\n";
+    //std::cout << distances << "\n";
+
+  }
+  typename M::FaceHandle destFace = mesh.face_handle(stroke.back());
+  typename M::FaceVertexIter dest_fv_it = mesh.fv_iter(destFace);
+  dest = dest_fv_it.handle().idx();
+  for(int i = 0; i<mesh.n_vertices(); i++)
+  {
+    prev.push_back(previous[i]);
+  }
+}
+
+template<typename M>
+double
+QtModelT<M>::cost(int u, int v)
+{
+  typename M::VertexHandle u_vh = mesh.vertex_handle(u);
+  typename M::VertexHandle v_vh = mesh.vertex_handle(v);
+  Point dist = mesh.point(v_vh) - mesh.point(u_vh);
+  return dist.norm();
 }
 
 

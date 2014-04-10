@@ -76,7 +76,7 @@ private:
     MyMesh m_mymesh;
     QColor m_backgroundColor;
     OpenMesh::IO::Options _options;
-
+    bool mouseClicked;
     QTime m_time;
     int m_mouseEventTime;
 
