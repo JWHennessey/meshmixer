@@ -653,23 +653,35 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
   
     GLuint Nhits = glRenderMode(GL_RENDER);
     clicked == false;
-    //std::cout << Nhits << " y\n";
+    //std::cout << "Nhits " << Nhits << "\n";
     if (Nhits > 0){
       GLuint item;
       GLuint front;
+      GLuint min = 0;
       for(size_t i = 0, index = 0; i < Nhits; i++ )
       {
         GLuint nitems = PickBuffer[index++];
-        //std::cout << index << " x" << index+1 << " \n";
-        index+= 2;
-        for(size_t j = 0; j < nitems; j++ )
+        //std::cout << "nitems " << nitems << "\n";
+        GLuint zmin = PickBuffer[index++];
+        GLuint zmax = PickBuffer[index++];
+        //std::cout << "zmin " << zmin << "\n";
+        //std::cout << "zmax " << zmax << "\n";
+        if(nitems == 1)
         {
-          item = PickBuffer[index++];
-          //std::cout << Nhits << " z" << item << " \n";
+          if(min == 0){
+            min = zmin;
+            item = PickBuffer[index++];
+          }
+          else if(min > zmin)
+          {
+            min = zmin;
+            item = PickBuffer[index++];
+          }
         }
-        models[selected]->select(item);
       }
-    } 
+      models[selected]->select(item);
+    }
+
 
 
 }

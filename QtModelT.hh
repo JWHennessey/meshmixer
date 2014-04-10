@@ -76,6 +76,8 @@ private:
     int dest;
     int source;
     std::vector<int> prev;
+    double normalDistance(int vertex);
+    double inverseGeodesic(int vertex);
 };
 
 struct Dist
