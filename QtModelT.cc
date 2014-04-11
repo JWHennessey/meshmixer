@@ -126,8 +126,20 @@ template <typename M>
 void
 QtModelT<M>::addToStroke(int f){
   stroke.push_back(f);
+  fuzzyRegion.insert(f);
   typename M::FaceHandle face = mesh.face_handle(f);
   mesh.set_color(face, typename M::Color(0, 255, 255));
+}
+
+template <typename M>
+void
+QtModelT<M>::addToFuzzyRegion(int f){
+
+  if(std::find(stroke.begin(), stroke.end(), f) == stroke.end()) {
+    fuzzyRegion.insert(f);
+    typename M::FaceHandle face = mesh.face_handle(f);
+    mesh.set_color(face, typename M::Color(0, 255, 0));
+  }
 }
 
 template <typename M>
@@ -139,6 +151,19 @@ QtModelT<M>::select(int faceNumber){
     { 
       //std::cout << "Connected" << "\n";
       addToStroke(faceNumber);
+      typename M::FaceHandle fh1 = mesh.face_handle(faceNumber);
+      for (typename M::FaceFaceIter ff_it1=mesh.ff_iter(fh1); ff_it1; ++ff_it1)
+      {
+        for (typename M::FaceFaceIter ff_it2=mesh.ff_iter(ff_it1.handle()); ff_it2; ++ff_it2)
+        {
+          for (typename M::FaceFaceIter ff_it3=mesh.ff_iter(ff_it2.handle()); ff_it3; ++ff_it3)
+          {
+            addToFuzzyRegion(ff_it3.handle().idx());
+          }
+          addToFuzzyRegion(ff_it2.handle().idx());
+        }
+        addToFuzzyRegion(ff_it1.handle().idx());
+      }
     }
     else
     {
@@ -154,22 +179,24 @@ QtModelT<M>::select(int faceNumber){
 template <typename M>
 bool
 QtModelT<M>::facesConnected(int f1, int f2){
-  typename M::FaceHandle fh1 = mesh.face_handle(f1);
-  typename M::FaceHandle fh2 = mesh.face_handle(f2);
-  for (typename M::FaceVertexIter vf_it1=mesh.fv_iter(fh1); vf_it1; ++vf_it1)
-  {
-    for (typename M::FaceVertexIter vf_it2=mesh.fv_iter(fh2); vf_it2; ++vf_it2)
-    {
-      //std::cout << mesh.point(*vf_it1) << "\n";
-      //std::cout << mesh.point(*vf_it2) << "\n";
-      if(mesh.point(*vf_it1) == mesh.point(*vf_it2))
-      {
-        strokeVertices.push_back(mesh.point(*vf_it1));
-        return true;
-      }
-    }
-  }
-  return false;
+  //typename M::FaceHandle fh1 = mesh.face_handle(f1);
+  //typename M::FaceHandle fh2 = mesh.face_handle(f2);
+  //bool ret = false;
+  //for (typename M::FaceVertexIter vf_it1=mesh.fv_iter(fh1); vf_it1; ++vf_it1)
+  //{
+    //for (typename M::FaceVertexIter vf_it2=mesh.fv_iter(fh2); vf_it2; ++vf_it2)
+    //{
+      //strokeVertices.push_back(mesh.point(*vf_it1));
+      ////std::cout << mesh.point(*vf_it1) << "\n";
+      ////std::cout << mesh.point(*vf_it2) << "\n";
+      //if(mesh.point(*vf_it1) == mesh.point(*vf_it2))
+      //{
+        //ret = true;
+      //}
+    //}
+  //}
+  //return ret;
+  return true;
 }
 
 template <typename M>
@@ -243,11 +270,11 @@ QtModelT<M>::render()
       glVertex3f(mesh.point(to_vh)[0], mesh.point(to_vh)[1], mesh.point(to_vh)[2]);
       from = to;
     }
-    for(int i = 0; i<strokeVertices.size()-1; i++)
-    {
-        glVertex3f(strokeVertices[i][0], strokeVertices[i][1], strokeVertices[i][2]);
-        glVertex3f(strokeVertices[i+1][0], strokeVertices[i+1][1], strokeVertices[i+1][2]);
-    }
+    //for(int i = 0; i<strokeVertices.size()-1; i++)
+    //{
+        //glVertex3f(strokeVertices[i][0], strokeVertices[i][1], strokeVertices[i][2]);
+        //glVertex3f(strokeVertices[i+1][0], strokeVertices[i+1][1], strokeVertices[i+1][2]);
+    //}
     glEnd();
   }
   /*
@@ -339,8 +366,8 @@ QtModelT<M>::buildSampledMatrix()
   int noSamples = 5000;
   PointMatrix allMat = buildMatrix();
   PointMatrix randMat(noSamples, 3);
-  for ( unsigned i = 0U; i < noSamples; ++i ) 
-  { 
+  for ( unsigned i = 0U; i < noSamples; ++i )
+  {
     float ind = float(rand()) / RAND_MAX;
 
     randMat.row(i) = allMat.row(floor(ind * mesh.n_vertices() ) );
@@ -654,6 +681,14 @@ QtModelT<M>::cut()
   {
     prev.push_back(previous[i]);
   }
+  int to;
+  int from = dest;
+  while(from != source)
+  {
+    to = prev[from];
+    addToFuzzyRegion(from);
+    from = to;
+  }
 }
 
 template<typename M>
@@ -663,7 +698,7 @@ QtModelT<M>::cost(int u, int v)
   typename M::VertexHandle u_vh = mesh.vertex_handle(u);
   typename M::VertexHandle v_vh = mesh.vertex_handle(v);
   double dist = (mesh.point(v_vh) - mesh.point(u_vh)).norm();
-  //dist += inverseGeodesic(v);
+  dist += inverseGeodesic(v);
   dist += normalDistance(v);
   return dist;
 }

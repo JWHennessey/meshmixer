@@ -62,6 +62,7 @@ public:
 private:
     bool facesConnected(int f1, int f2);
     void addToStroke(int f);
+    void addToFuzzyRegion(int f);
     QVector3D modelRotation;
     QColor modelColor;
     GLfloat vertical;
@@ -71,6 +72,7 @@ private:
     GeoTreeT<M> *geoTree;
     const float deg2Rad;
     void findBoundaryVertices();
+    std::unordered_set<int> fuzzyRegion;
     std::vector<int> stroke;
     std::vector<Point> strokeVertices;
     double cost(int u, int v);
