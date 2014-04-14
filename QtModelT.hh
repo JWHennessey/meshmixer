@@ -75,6 +75,13 @@ private:
     std::unordered_set<int> fuzzyRegion;
     std::vector<int> stroke;
     std::vector<Point> strokeVertices;
+    Vec getFaceCentroid(typename M::FaceHandle fh);
+    Vec strokeNormal;
+    Vec strokeCentroid;
+    Vec firstStrokeNorm;
+    Vec lastStrokeNorm;
+    double strokeOpeningAngle;
+    void calcStrokeProxies();
     double cost(int u, int v);
     int dest;
     int source;

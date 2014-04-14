@@ -128,6 +128,14 @@ QtModelT<M>::addToStroke(int f){
   stroke.push_back(f);
   fuzzyRegion.insert(f);
   typename M::FaceHandle face = mesh.face_handle(f);
+
+  Vec n = Vec(mesh.normal(face)[0], mesh.normal(face)[1], mesh.normal(face)[2]);
+  if(stroke.size() == 1){
+    firstStrokeNorm = n;
+  }else{
+    lastStrokeNorm = n;
+  }
+
   mesh.set_color(face, typename M::Color(0, 255, 255));
 }
 
@@ -156,10 +164,10 @@ QtModelT<M>::select(int faceNumber){
       {
         for (typename M::FaceFaceIter ff_it2=mesh.ff_iter(ff_it1.handle()); ff_it2; ++ff_it2)
         {
-          for (typename M::FaceFaceIter ff_it3=mesh.ff_iter(ff_it2.handle()); ff_it3; ++ff_it3)
-          {
-            addToFuzzyRegion(ff_it3.handle().idx());
-          }
+          //for (typename M::FaceFaceIter ff_it3=mesh.ff_iter(ff_it2.handle()); ff_it3; ++ff_it3)
+          //{
+            //addToFuzzyRegion(ff_it3.handle().idx());
+          //}
           addToFuzzyRegion(ff_it2.handle().idx());
         }
         addToFuzzyRegion(ff_it1.handle().idx());
@@ -254,29 +262,29 @@ QtModelT<M>::render()
   glDisableClientState(GL_NORMAL_ARRAY);
 
 
-  if(dest >= 0)
-  {
-    glBegin(GL_LINES);
-    glLineWidth(5.0f);
-    glColor3b (0, 255, 0);
-    int to;
-    int from = dest;
-    while(from != source)
-    {
-      to = prev[from];
-      typename M::VertexHandle to_vh = mesh.vertex_handle(to);
-      typename M::VertexHandle from_vh = mesh.vertex_handle(from);
-      glVertex3f(mesh.point(from_vh)[0], mesh.point(from_vh)[1], mesh.point(from_vh)[2]);
-      glVertex3f(mesh.point(to_vh)[0], mesh.point(to_vh)[1], mesh.point(to_vh)[2]);
-      from = to;
-    }
-    //for(int i = 0; i<strokeVertices.size()-1; i++)
+  //if(dest >= 0)
+  //{
+    //glBegin(GL_LINES);
+    //glLineWidth(5.0f);
+    //glColor3b (0, 255, 0);
+    //int to;
+    //int from = dest;
+    //while(from != source)
     //{
-        //glVertex3f(strokeVertices[i][0], strokeVertices[i][1], strokeVertices[i][2]);
-        //glVertex3f(strokeVertices[i+1][0], strokeVertices[i+1][1], strokeVertices[i+1][2]);
+      //to = prev[from];
+      //typename M::VertexHandle to_vh = mesh.vertex_handle(to);
+      //typename M::VertexHandle from_vh = mesh.vertex_handle(from);
+      //glVertex3f(mesh.point(from_vh)[0], mesh.point(from_vh)[1], mesh.point(from_vh)[2]);
+      //glVertex3f(mesh.point(to_vh)[0], mesh.point(to_vh)[1], mesh.point(to_vh)[2]);
+      //from = to;
     //}
-    glEnd();
-  }
+    ////for(int i = 0; i<strokeVertices.size()-1; i++)
+    ////{
+        ////glVertex3f(strokeVertices[i][0], strokeVertices[i][1], strokeVertices[i][2]);
+        ////glVertex3f(strokeVertices[i+1][0], strokeVertices[i+1][1], strokeVertices[i+1][2]);
+    ////}
+    //glEnd();
+  //}
   /*
     glEnable(GL_LIGHTING);
     glShadeModel(GL_FLAT);
@@ -499,6 +507,7 @@ QtModelT<M>::clearColour()
   modelColor.setRgb(10, 10, 10);
   updateColour();
   dest = -1;
+  prev.clear();
   stroke.clear();
   strokeVertices.clear();
 }
@@ -628,6 +637,9 @@ template<typename M>
 void
 QtModelT<M>::cut()
 {
+  dest = -1;
+  prev.clear();
+  calcStrokeProxies();
   typename M::FaceHandle face = mesh.face_handle(stroke.front());
   typename M::FaceVertexIter fv_it = mesh.fv_iter(face);
   source = fv_it.handle().idx();
@@ -658,10 +670,10 @@ QtModelT<M>::cut()
       }
     }
     min = 1001.0;
-    //std::cout << "Q Size Before " << q.size() << "\n";
-    //std::cout << "Removed " << u << "\n";
+    std::cout << "Q Size Before " << q.size() << "\n";
+    std::cout << "Removed " << u << "\n";
     q.erase(u);
-    //std::cout << "Q Size After" << q.size() << "\n";
+    std::cout << "Q Size After" << q.size() << "\n";
     typename M::VertexHandle vh = mesh.vertex_handle(u);
     for (typename M::VertexVertexIter vv_it=mesh.vv_iter(vh); vv_it; ++vv_it)
     {
@@ -674,19 +686,40 @@ QtModelT<M>::cut()
       }
     }
   }
+  std::cout << "Q Empty" << "\n";
   typename M::FaceHandle destFace = mesh.face_handle(stroke.back());
   typename M::FaceVertexIter dest_fv_it = mesh.fv_iter(destFace);
   dest = dest_fv_it.handle().idx();
   for(int i = 0; i<mesh.n_vertices(); i++)
   {
     prev.push_back(previous[i]);
+    std::cout << previous[i] << "\n";
+    std::cout << distances[i] << "\n";
   }
+  std::cout << "Prev built" << "\n";
   int to;
   int from = dest;
+  int counter = 0;
   while(from != source)
   {
+    std::cout << "Add to Fuzzy" << counter++ << "\n";
+    //addToFuzzyRegion(from);
+    typename M::VertexHandle vh1 = mesh.vertex_handle(from);
+    for (typename M::VertexFaceIter ff_it1=mesh.vf_iter(vh1); ff_it1; ++ff_it1)
+    {
+        for (typename M::FaceFaceIter ff_it2=mesh.ff_iter(ff_it1.handle()); ff_it2; ++ff_it2)
+        {
+          for (typename M::FaceFaceIter ff_it3=mesh.ff_iter(ff_it2.handle()); ff_it3; ++ff_it3)
+          {
+            addToFuzzyRegion(ff_it3.handle().idx());
+          }
+          addToFuzzyRegion(ff_it2.handle().idx());
+        }
+        addToFuzzyRegion(ff_it1.handle().idx());
+    }
+    std::cout << "Source " << source << "\n";
+    std::cout << "From " << from << "\n";
     to = prev[from];
-    addToFuzzyRegion(from);
     from = to;
   }
 }
@@ -695,11 +728,14 @@ template<typename M>
 double
 QtModelT<M>::cost(int u, int v)
 {
+  std::cout << u << "\n";
   typename M::VertexHandle u_vh = mesh.vertex_handle(u);
   typename M::VertexHandle v_vh = mesh.vertex_handle(v);
   double dist = (mesh.point(v_vh) - mesh.point(u_vh)).norm();
   dist += inverseGeodesic(v);
+  std::cout << "Before Normal Dist" << "\n";
   dist += normalDistance(v);
+  std::cout << "After Normal Dist" << "\n ... \n";
   return dist;
 }
 
@@ -707,74 +743,127 @@ template<typename M>
 double
 QtModelT<M>::normalDistance(int vertex)
 {
- //
- return 0.0;
+ //return 0.0;
+ typename M::VertexHandle vh = mesh.vertex_handle(vertex);
+ Vec n = Vec(mesh.normal(vh)[0], mesh.normal(vh)[1], mesh.normal(vh)[2] );
+ double cosOpeningAngle = cos(firstStrokeNorm.dot(lastStrokeNorm));
+ double nDotv = n.dot(strokeNormal);
+ if(cosOpeningAngle <= nDotv)
+   return 1.0;
+ else
+   return (nDotv + 1.0 / cosOpeningAngle + 1.0);
 }
 
-
+//Perhaps this could be the Geodesic distance to the vertex closest to the centroid.
 template<typename M>
 double
 QtModelT<M>::inverseGeodesic(int vertex)
 {
-  int s = vertex;
-  //double distances[mesh.n_vertices()];
-  //int previous[mesh.n_vertices()];
-  //std::unordered_set<int> q;
-  //distances[s] = 0;
-  //for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
-  //{
-    //int v = v_it.handle().idx();
-    //std::cout << v << "\n";
-    //if(v != s)
-    //{
-      //distances[v] = 1000.0;
-      //previous[v] = NULL;
-    //}
-    //q.insert(v);
-  //}
-  //while(!q.empty())
-  //{
-    //double min = 1001.0;
-    //int u;
-    //for ( auto i = q.begin(); i != q.end(); ++i )
-    //{
-      //if(distances[*i] < min)
-      //{
-        //min = distances[*i];
-        //u = *i;
-      //}
-    //}
-    //min = 1001.0;
-    ////std::cout << "Q Size Before " << q.size() << "\n";
-    ////std::cout << "Removed " << u << "\n";
-    //q.erase(u);
-    ////std::cout << "Q Size After" << q.size() << "\n";
-    //typename M::VertexHandle vh = mesh.vertex_handle(u);
-    //for (typename M::VertexVertexIter vv_it=mesh.vv_iter(vh); vv_it; ++vv_it)
-    //{
-      //int v = vv_it.handle().idx();
-      //float alt = distances[u] + cost(u, v);
-      //if(alt < distances[v])
-      //{
-        //distances[v] = alt;
-        //previous[v] = u;
-      //}
-    //}
-  //}
-  double dist = 0.0;
-  for(int i = 0; i<stroke.size(); i++)
-  {
-   /** 
-    Currently the stoke is face ids. They should probably be vertex ids instead. 
-     I'm just not sure yet.
-    */
-    typename M::FaceHandle destFace = mesh.face_handle(stroke[i]);
-    typename M::FaceVertexIter dest_fv_it = mesh.fv_iter(destFace);
-    //int destVertex = dest_fv_it.handle().idx();
-    dist += 1.0 / (mesh.point(dest_fv_it.handle()) - mesh.point(mesh.vertex_handle(s) ) ).norm();//distances[destVertex];
-  }
-  return dist;
-
+  typename M::VertexHandle vh = mesh.vertex_handle(vertex);
+  Vec p = Vec(mesh.point(vh)[0], mesh.point(vh)[1], mesh.point(vh)[2] );
+  return 1.0 / (strokeCentroid - p).norm();
 }
+
+
+template<typename M>
+void
+QtModelT<M>::calcStrokeProxies()
+{
+  PointMatrix mat(stroke.size(), 3);
+  int i = 0;
+  for ( auto it = stroke.begin(); it != stroke.end(); ++it )
+   {
+    typename M::FaceHandle fh = mesh.face_handle(*it);
+    Vec v = getFaceCentroid(fh);
+    mat(i, 0) = v[0];
+    mat(i, 1) = v[1];
+    mat(i, 2) = v[2];
+    i++;
+  }
+  Eigen::MatrixXd meanMat = mat.colwise().mean();
+  strokeCentroid = Vec(meanMat(0, 0), meanMat(0, 1), meanMat(0, 2));
+  Eigen::MatrixXd centered = mat.rowwise() - mat.colwise().mean();
+  Eigen::MatrixXd cov = (centered.adjoint() * centered) / double(mat.rows());
+  Eigen::EigenSolver<Eigen::MatrixXd> es(cov);
+  Eigen::VectorXcd v = es.eigenvectors().row(1);
+  strokeNormal = Vec(std::real(v[0]), std::real(v[1]), std::real(v[2]));
+}
+
+
+template <typename M>
+Vec
+QtModelT<M>::getFaceCentroid(typename M::FaceHandle fh)
+{
+  Vec centroid = Vec(0,0,0);
+  for (typename M::FaceVertexIter vf_it=mesh.fv_iter(fh); vf_it; ++vf_it)
+  {
+    centroid = centroid + Vec(mesh.point(*vf_it)[0], mesh.point(*vf_it)[1], mesh.point(*vf_it)[2]);
+  }
+  return centroid / 3;
+}
+
+//template<typename M>
+//double
+//QtModelT<M>::inverseGeodesic(int vertex)
+//{
+  //int s = vertex;
+  ////double distances[mesh.n_vertices()];
+  ////int previous[mesh.n_vertices()];
+  ////std::unordered_set<int> q;
+  ////distances[s] = 0;
+  ////for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
+  ////{
+    ////int v = v_it.handle().idx();
+    ////std::cout << v << "\n";
+    ////if(v != s)
+    ////{
+      ////distances[v] = 1000.0;
+      ////previous[v] = NULL;
+    ////}
+    ////q.insert(v);
+  ////}
+  ////while(!q.empty())
+  ////{
+    ////double min = 1001.0;
+    ////int u;
+    ////for ( auto i = q.begin(); i != q.end(); ++i )
+    ////{
+      ////if(distances[*i] < min)
+      ////{
+        ////min = distances[*i];
+        ////u = *i;
+      ////}
+    ////}
+    ////min = 1001.0;
+    //////std::cout << "Q Size Before " << q.size() << "\n";
+    //////std::cout << "Removed " << u << "\n";
+    ////q.erase(u);
+    //////std::cout << "Q Size After" << q.size() << "\n";
+    ////typename M::VertexHandle vh = mesh.vertex_handle(u);
+    ////for (typename M::VertexVertexIter vv_it=mesh.vv_iter(vh); vv_it; ++vv_it)
+    ////{
+      ////int v = vv_it.handle().idx();
+      ////float alt = distances[u] + cost(u, v);
+      ////if(alt < distances[v])
+      ////{
+        ////distances[v] = alt;
+        ////previous[v] = u;
+      ////}
+    ////}
+  ////}
+  //double dist = 0.0;
+  //for(int i = 0; i<stroke.size(); i++)
+  //{
+   //[>* 
+    //Currently the stoke is face ids. They should probably be vertex ids instead. 
+     //I'm just not sure yet.
+    //*/
+    //typename M::FaceHandle destFace = mesh.face_handle(stroke[i]);
+    //typename M::FaceVertexIter dest_fv_it = mesh.fv_iter(destFace);
+    ////int destVertex = dest_fv_it.handle().idx();
+    //dist += 1.0 / (mesh.point(dest_fv_it.handle()) - mesh.point(mesh.vertex_handle(s) ) ).norm();//distances[destVertex];
+  //}
+  //return dist;
+//}
 
 #endif
