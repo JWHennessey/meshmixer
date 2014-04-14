@@ -73,6 +73,8 @@ private:
     const float deg2Rad;
     void findBoundaryVertices();
     std::unordered_set<int> fuzzyRegion;
+    std::unordered_set<int> sourceRegion;
+    std::unordered_set<int> sinkRegion;
     std::vector<int> stroke;
     std::vector<Point> strokeVertices;
     Vec getFaceCentroid(typename M::FaceHandle fh);
@@ -88,6 +90,10 @@ private:
     std::vector<int> prev;
     double normalDistance(int vertex);
     double inverseGeodesic(int vertex);
+    void createSourceAndSink();
+    void graphCut();
+    bool inRegion(int f);
+    void regionGrow(int f, std::unordered_set<int>* region, int type);
 };
 
 struct Dist

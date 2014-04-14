@@ -670,10 +670,10 @@ QtModelT<M>::cut()
       }
     }
     min = 1001.0;
-    std::cout << "Q Size Before " << q.size() << "\n";
-    std::cout << "Removed " << u << "\n";
+    //std::cout << "Q Size Before " << q.size() << "\n";
+    //std::cout << "Removed " << u << "\n";
     q.erase(u);
-    std::cout << "Q Size After" << q.size() << "\n";
+    //std::cout << "Q Size After" << q.size() << "\n";
     typename M::VertexHandle vh = mesh.vertex_handle(u);
     for (typename M::VertexVertexIter vv_it=mesh.vv_iter(vh); vv_it; ++vv_it)
     {
@@ -686,23 +686,23 @@ QtModelT<M>::cut()
       }
     }
   }
-  std::cout << "Q Empty" << "\n";
+  //std::cout << "Q Empty" << "\n";
   typename M::FaceHandle destFace = mesh.face_handle(stroke.back());
   typename M::FaceVertexIter dest_fv_it = mesh.fv_iter(destFace);
   dest = dest_fv_it.handle().idx();
   for(int i = 0; i<mesh.n_vertices(); i++)
   {
     prev.push_back(previous[i]);
-    std::cout << previous[i] << "\n";
-    std::cout << distances[i] << "\n";
+    //std::cout << previous[i] << "\n";
+    //std::cout << distances[i] << "\n";
   }
-  std::cout << "Prev built" << "\n";
+  //std::cout << "Prev built" << "\n";
   int to;
   int from = dest;
   int counter = 0;
   while(from != source)
   {
-    std::cout << "Add to Fuzzy" << counter++ << "\n";
+    //std::cout << "Add to Fuzzy" << counter++ << "\n";
     //addToFuzzyRegion(from);
     typename M::VertexHandle vh1 = mesh.vertex_handle(from);
     for (typename M::VertexFaceIter ff_it1=mesh.vf_iter(vh1); ff_it1; ++ff_it1)
@@ -717,25 +717,27 @@ QtModelT<M>::cut()
         }
         addToFuzzyRegion(ff_it1.handle().idx());
     }
-    std::cout << "Source " << source << "\n";
-    std::cout << "From " << from << "\n";
+    //std::cout << "Source " << source << "\n";
+    //std::cout << "From " << from << "\n";
     to = prev[from];
     from = to;
   }
+  createSourceAndSink();
+  graphCut();
 }
 
 template<typename M>
 double
 QtModelT<M>::cost(int u, int v)
 {
-  std::cout << u << "\n";
+  //std::cout << u << "\n";
   typename M::VertexHandle u_vh = mesh.vertex_handle(u);
   typename M::VertexHandle v_vh = mesh.vertex_handle(v);
   double dist = (mesh.point(v_vh) - mesh.point(u_vh)).norm();
   dist += inverseGeodesic(v);
-  std::cout << "Before Normal Dist" << "\n";
+  //std::cout << "Before Normal Dist" << "\n";
   dist += normalDistance(v);
-  std::cout << "After Normal Dist" << "\n ... \n";
+  //std::cout << "After Normal Dist" << "\n ... \n";
   return dist;
 }
 
@@ -802,68 +804,99 @@ QtModelT<M>::getFaceCentroid(typename M::FaceHandle fh)
   return centroid / 3;
 }
 
-//template<typename M>
-//double
-//QtModelT<M>::inverseGeodesic(int vertex)
-//{
-  //int s = vertex;
-  ////double distances[mesh.n_vertices()];
-  ////int previous[mesh.n_vertices()];
-  ////std::unordered_set<int> q;
-  ////distances[s] = 0;
-  ////for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
-  ////{
-    ////int v = v_it.handle().idx();
-    ////std::cout << v << "\n";
-    ////if(v != s)
-    ////{
-      ////distances[v] = 1000.0;
-      ////previous[v] = NULL;
-    ////}
-    ////q.insert(v);
-  ////}
-  ////while(!q.empty())
-  ////{
-    ////double min = 1001.0;
-    ////int u;
-    ////for ( auto i = q.begin(); i != q.end(); ++i )
-    ////{
-      ////if(distances[*i] < min)
-      ////{
-        ////min = distances[*i];
-        ////u = *i;
-      ////}
-    ////}
-    ////min = 1001.0;
-    //////std::cout << "Q Size Before " << q.size() << "\n";
-    //////std::cout << "Removed " << u << "\n";
-    ////q.erase(u);
-    //////std::cout << "Q Size After" << q.size() << "\n";
-    ////typename M::VertexHandle vh = mesh.vertex_handle(u);
-    ////for (typename M::VertexVertexIter vv_it=mesh.vv_iter(vh); vv_it; ++vv_it)
-    ////{
-      ////int v = vv_it.handle().idx();
-      ////float alt = distances[u] + cost(u, v);
-      ////if(alt < distances[v])
-      ////{
-        ////distances[v] = alt;
-        ////previous[v] = u;
-      ////}
-    ////}
-  ////}
-  //double dist = 0.0;
-  //for(int i = 0; i<stroke.size(); i++)
-  //{
-   //[>* 
-    //Currently the stoke is face ids. They should probably be vertex ids instead. 
-     //I'm just not sure yet.
-    //*/
-    //typename M::FaceHandle destFace = mesh.face_handle(stroke[i]);
-    //typename M::FaceVertexIter dest_fv_it = mesh.fv_iter(destFace);
-    ////int destVertex = dest_fv_it.handle().idx();
-    //dist += 1.0 / (mesh.point(dest_fv_it.handle()) - mesh.point(mesh.vertex_handle(s) ) ).norm();//distances[destVertex];
-  //}
-  //return dist;
-//}
+template<typename M>
+void
+QtModelT<M>::createSourceAndSink()
+{
+  std::cout << "Source and Sink" << "\n";
+  bool notUnique = true;
+  int assignedFaces = fuzzyRegion.size();
+  while(notUnique)
+  {
+    int f = rand() % mesh.n_faces();
+    if(!inRegion(f))
+    {
+      regionGrow(f, &sourceRegion, 0);
+      notUnique = false;
+    }
+  }
+  notUnique = true;
+  while(notUnique)
+  {
+    int f = rand() % mesh.n_faces();
+    if(!inRegion(f))
+    {
+      regionGrow(f, &sinkRegion, 1);
+      notUnique = false;
+    }
+  }
+  assignedFaces = fuzzyRegion.size() + sinkRegion.size() + sourceRegion.size();
+  //std::cout << "In Fuzzy Region " << fuzzyRegion.size() << " / " << mesh.n_faces() << "\n";
+  //std::cout << "In Source Region " << sourceRegion.size() << " / " << mesh.n_faces() << "\n";
+  //std::cout << "In Sink Region " << sinkRegion.size() << " / " << mesh.n_faces() << "\n";
+}
+
+template<typename M>
+void
+QtModelT<M>::regionGrow(int f, std::unordered_set<int>* region, int type)
+{
+  //std::cout << f << " Region Grow " << type << "\n";
+  region->insert(f);
+  
+  typename M::FaceHandle fh = mesh.face_handle(f);
+  if(type == 1)
+    mesh.set_color(fh, typename M::Color(255, 0, 0));
+  else
+    mesh.set_color(fh, typename M::Color(0, 0, 255));
+
+
+  for (typename M::FaceFaceIter ff_it=mesh.ff_iter(fh); ff_it; ++ff_it)
+  {
+    f = ff_it.handle().idx();
+    //std::cout << "FFI " << f << "\n";
+    if(!inRegion(f))
+    {
+      //std::cout << "Not in region" << "\n";
+      regionGrow(f, region, type);
+    }
+    else
+    {
+      //std::cout << "In region" << "\n";
+    }
+  }
+}
+
+template<typename M>
+bool
+QtModelT<M>::inRegion(int f)
+{
+ std::unordered_set<int>::const_iterator gotFR = fuzzyRegion.find (f);
+ if(gotFR != fuzzyRegion.end())
+ {
+  //std::cout << "In Fuzzy Region " << fuzzyRegion.size() << " / " << mesh.n_faces() << "\n";
+   return true;
+ }
+ std::unordered_set<int>::const_iterator gotSoR = sourceRegion.find (f);
+ if(gotSoR != sourceRegion.end())
+ {
+  //std::cout << "In Source Region" << sourceRegion.size() << " / " << mesh.n_faces() << "\n";;
+  return true;
+ }
+ std::unordered_set<int>::const_iterator gotSiR = sinkRegion.find (f);
+ if(gotSiR != sinkRegion.end())
+ {
+  //std::cout << "In Sink Region" << sinkRegion.size() << " / " << mesh.n_faces() << "\n";;
+  return true;
+ }
+ return false;
+}
+
+template<typename M>
+void
+QtModelT<M>::graphCut()
+{
+  std::cout << "Graph Cut" << "\n";
+}
+
 
 #endif
