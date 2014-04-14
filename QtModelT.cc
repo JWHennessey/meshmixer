@@ -507,6 +507,7 @@ QtModelT<M>::clearColour()
   modelColor.setRgb(10, 10, 10);
   updateColour();
   dest = -1;
+  fuzzyRegion.clear();
   prev.clear();
   stroke.clear();
   strokeVertices.clear();
@@ -724,6 +725,7 @@ QtModelT<M>::cut()
   }
   createSourceAndSink();
   graphCut();
+  fuzzyRegion.clear();
 }
 
 template<typename M>
@@ -808,6 +810,8 @@ template<typename M>
 void
 QtModelT<M>::createSourceAndSink()
 {
+  sourceRegion.clear();
+  sinkRegion.clear();
   std::cout << "Source and Sink" << "\n";
   bool notUnique = true;
   int assignedFaces = fuzzyRegion.size();
