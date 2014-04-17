@@ -27,17 +27,22 @@ public:
     typedef std::vector<std::vector< std::pair< size_t, double > > > MapTable;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
     QRectF boundingRect() const;
+    int modelnumber;
     void calcNormals();
-
+    std::vector<VertexHandle> boundaryPoints;
+    PointMatrix boundaryMatrix;
+  
 public:
-     M mesh;
+    M mesh;
     QtModelT(M& m);
     ~QtModelT();
     void render();
+    void select(int faceNumber);
     void updateColour();
     void updateRotation(QVector3D& rotationVec);
     void updateHorizontal(float x);
     void updateVertical(float x);
+    void updateZAxis(float x);
     void applyTransformations();
     M* getMesh(){ return &mesh; }
     PointMatrix buildMatrix();
@@ -46,17 +51,22 @@ public:
     int getNoVerticies();
     void updateTransformations(Matrix<double, 3, 3>& R, double x, double y, double z);
     void nearestNeighbours(double radius, MapTable* resultTable);
+    void scale(float alpha);
+    void clearColour();
+    QVector3D meshRotation;
+    void colourFaceFromVertexIndex(int vertexNumber);
 
 private:
-    QVector3D modelRotation;
     QColor modelColor;
     GLfloat vertical;
     GLfloat horizontal;
     GLfloat depth;
+    GLfloat zAxis;
+    double gauss_curvature(VertexHandle _vh);
     const float deg2Rad;
-
-
-
+    void findBoundaryVertices();
+    std::vector<VertexHandle> findBoundaryRing(VertexHandle point);
+    Vec3f center;
 };
 
 #if defined(OM_INCLUDE_TEMPLATES) && !defined(MODEL_CC)
