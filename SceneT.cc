@@ -270,7 +270,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
   double sizeM1 = computeSnapRegionSize(m1,m2);
   double sizeM2 = computeSnapRegionSize(m2,m1);
   double snapSize = sizeM1 < sizeM2 ? sizeM1 : sizeM2;
-  snapSize = sizeM1;
+  snapSize = 0.2;
   std::vector<size_t> m1SnapRegion = computeSnapRegion(m1, snapSize);
   std::vector<size_t> m2SnapRegion = computeSnapRegion(m2, snapSize);
   std::cout << snapSize << " " << sizeM1 << sizeM2 << " snap\n";
@@ -359,6 +359,8 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
         }
       }
       //std::cout << correspondMatrix(0,0) << "corMat \n";
+      
+      //apply ICP
       float scale = (lbbMax - lbbMin).length() / (cbbMax - cbbMax).length();
       Matrix<double, 1, 3> localMean = localMatrix.colwise().mean();
       Matrix<double, 1, 3> coreMean = correspondMatrix.colwise().mean();
@@ -379,7 +381,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       Matrix<double, 1, 3> temp2 = coreMean;
       Matrix<double, 1, 3> t = temp1 - temp2;
       
-      float li = iterCount/iterations;
+      float li = iterCount+1/iterations;
       int it = 0;
       for (typename M::VertexIter v_it=m1->mesh.vertices_begin(); v_it!=m1->mesh.vertices_end(); ++v_it)
       {
@@ -393,7 +395,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
         Point vertex = m1->mesh.point(*v_it);
         Eigen::Vector3d p = Eigen::Vector3d(vertex[0], vertex[1], vertex[2]);
         p = R * p;
-        m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) +  Point(T[0], T[1], T[2]));
+        m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) - Point(T[0], T[1], T[2]));
         it++;
       }
     }
@@ -1025,7 +1027,7 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
     
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
-    gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.01, 0.1, viewport);
+    gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.001, 0.001, viewport);
     gluPerspective(70, width() / height(), 0.01, 1000);
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
