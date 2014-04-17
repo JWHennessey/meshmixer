@@ -1162,9 +1162,11 @@ QtModelT<M>::deleteSink()
 {
   for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
   {
+    std::cout << "del" << "\n";
     typename M::FaceHandle fh = mesh.face_handle(*it);
     mesh.delete_face(fh, false);
   }
+ std::cout << "del complete" << "\n";
   mesh.garbage_collection();
 }
 
