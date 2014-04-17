@@ -53,16 +53,20 @@ public:
     void nearestNeighbours(double radius, MapTable* resultTable);
     void scale(float alpha);
     void clearColour();
+    QVector3D meshRotation;
+    void colourFaceFromVertexIndex(int vertexNumber);
 
 private:
-    QVector3D meshRotation;
     QColor modelColor;
     GLfloat vertical;
     GLfloat horizontal;
     GLfloat depth;
     GLfloat zAxis;
+    double gauss_curvature(VertexHandle _vh);
     const float deg2Rad;
     void findBoundaryVertices();
+    std::vector<VertexHandle> findBoundaryRing(VertexHandle point);
+    Vec3f center;
 };
 
 #if defined(OM_INCLUDE_TEMPLATES) && !defined(MODEL_CC)
