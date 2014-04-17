@@ -345,6 +345,8 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
         }
       }
       //std::cout << correspondMatrix(0,0) << "corMat \n";
+      
+      //apply ICP
       float scale = (lbbMax - lbbMin).length() / (cbbMax - cbbMax).length();
       Matrix<double, 1, 3> localMean = localMatrix.colwise().mean();
       Matrix<double, 1, 3> coreMean = correspondMatrix.colwise().mean();
@@ -365,7 +367,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       Matrix<double, 1, 3> temp2 = coreMean;
       Matrix<double, 1, 3> t = temp1 - temp2;
       
-      float li = iterCount/iterations;
+      float li = iterCount+1/iterations;
       int it = 0;
       for (typename M::VertexIter v_it=m1->mesh.vertices_begin(); v_it!=m1->mesh.vertices_end(); ++v_it)
       {
