@@ -61,8 +61,12 @@ protected:
     void cut();
     void copy();
     void deleteSection();
+    void geoTree();
+    void softICP(QtModelT<M>* m1, QtModelT<M>* m2);
+    std::vector<size_t> computeSnapRegion(QtModelT<M>* m1, QtModelT<M>* m2);
     void clickRadioButton(int index);
     int getClickedMeshIndex(QGraphicsSceneMouseEvent *event);
+
 
 private:
     int modelCount;
@@ -76,7 +80,7 @@ private:
     MyMesh m_mymesh;
     QColor m_backgroundColor;
     OpenMesh::IO::Options _options;
-
+    bool mouseClicked;
     QTime m_time;
     int m_mouseEventTime;
 
@@ -109,12 +113,12 @@ private:
     QRadioButton* paintFacesRadio;
     void paintFaces(QGraphicsSceneMouseEvent *event);
     bool inPaintingMode;
-  void moveMeshInOneAxis(QGraphicsSceneMouseEvent *event);
-  void softICP(QtModelT<M>* m1, QtModelT<M>* m2);
-  std::vector<size_t> computeSnapRegion(QtModelT<M>* m1, float snapMax);
-  void calcBaryCenteredPoints(PointMatrix &matHat, const PointMatrix &mat);
-  void generateAMatrix(Matrix<double, 3, 3>  &A, const PointMatrix &m1Hat, const PointMatrix &m2Hat);
-  std::vector<size_t> findLocalNeighbourhood(std::vector<double> query_pt, PointMatrix m1Matrix, double radius);
+    void moveMeshInOneAxis(QGraphicsSceneMouseEvent *event);
+  //void softICP(QtModelT<M>* m1, QtModelT<M>* m2);
+    std::vector<size_t> computeSnapRegion(QtModelT<M>* m1, float snapMax);
+    void calcBaryCenteredPoints(PointMatrix &matHat, const PointMatrix &mat);
+    void generateAMatrix(Matrix<double, 3, 3>  &A, const PointMatrix &m1Hat, const PointMatrix &m2Hat);
+    std::vector<size_t> findLocalNeighbourhood(std::vector<double> query_pt, PointMatrix m1Matrix, double radius);
 };
 
 #if defined(OM_INCLUDE_TEMPLATES) && !defined(SCENE_CC)

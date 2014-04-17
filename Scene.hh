@@ -2,11 +2,11 @@
 #define SCENE_HH
 
 #include <OpenMesh/Core/IO/MeshIO.hh>
-
 #include <SceneT.hh>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 #include <OpenMesh/Tools/Utils/getopt.h>
 #include "MyMesh.hh"
+#include <QApplication>
 
 using namespace Qt;
 using namespace OpenMesh;
@@ -27,7 +27,7 @@ public:
       connect(pasteButton, SIGNAL(clicked()), this, SLOT(pasteSlot()));
       connect(copyButton, SIGNAL(clicked()), this, SLOT(copySlot()));
       connect(deleteButton, SIGNAL(clicked()), this, SLOT(deleteSlot()));
-
+      connect(geoTreeButton, SIGNAL(clicked()), this, SLOT(geoTreeSlot()));
     }
 public slots:
     void selectMesh()
@@ -53,6 +53,12 @@ public slots:
     void deleteSlot(){
       deleteSection();
     }
+
+    void geoTreeSlot(){
+      geoTree();
+    }
+
+
 
 };
 #endif

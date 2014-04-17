@@ -12,6 +12,9 @@
 #include <QVector3D>
 #include <eigen3/Eigen/Dense>
 #include <nanoflann.hpp>
+#include "GeoTreeT.hh"
+#include <queue>
+#include <unordered_set>
 
 //#include <flann/io/hdf5.h>
 
@@ -53,21 +56,75 @@ public:
     void nearestNeighbours(double radius, MapTable* resultTable);
     void scale(float alpha);
     void clearColour();
-    QVector3D meshRotation;
     void colourFaceFromVertexIndex(int vertexNumber);
+    void createGeoTree(int k);
+    std::vector<int> getStroke();
+    void cut();
+    void deleteSink();
+    QVector3D meshRotation;
 
 private:
+    bool facesConnected(int f1, int f2);
+    void addToStroke(int f);
+    void addToFuzzyRegion(int f);
+    QVector3D modelRotation;
+    
+    
     QColor modelColor;
     GLfloat vertical;
     GLfloat horizontal;
     GLfloat depth;
     GLfloat zAxis;
+    GeoTreeT<M> *geoTree;
+    std::unordered_set<int> fuzzyRegion;
+    std::unordered_set<int> sourceRegion;
+    std::unordered_set<int> sinkRegion;
+    std::vector<int> stroke;
+    std::vector<Point> strokeVertices;
+    Vec getFaceCentroid(typename M::FaceHandle fh);
+    Vec strokeNormal;
+    Vec strokeCentroid;
+    Vec firstStrokeNorm;
+    Vec lastStrokeNorm;
+    double strokeOpeningAngle;
+    void calcStrokeProxies();
+    double cost(int u, int v);
+    int dest;
+    int source;
+    std::vector<int> prev;
+    double normalDistance(int vertex);
+    double inverseGeodesic(int vertex);
+    void createSourceAndSink();
+    void graphCut();
+    bool inRegion(int f);
+    void regionGrow(int f, std::unordered_set<int>* region, int type);
+    double distToSource(int fId);
+    double distToSink(int fId);
+    double faceDist(int fId1, int fId2);
     double gauss_curvature(VertexHandle _vh);
     const float deg2Rad;
     void findBoundaryVertices();
     std::vector<VertexHandle> findBoundaryRing(VertexHandle point);
     Vec3f center;
 };
+
+struct Dist
+{
+    float dist;
+    int id;
+
+    Dist(int i, float d) : id(i), dist(d)
+    {
+      //
+    }
+
+    bool operator<(const struct Dist& other) const
+    {
+        //Your priority logic goes here
+        return dist > other.dist;
+    }
+};
+
 
 #if defined(OM_INCLUDE_TEMPLATES) && !defined(MODEL_CC)
 #  define SCENE_TEMPLATES

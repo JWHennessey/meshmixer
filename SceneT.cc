@@ -37,6 +37,7 @@ SceneT<M>::SceneT()
 , TANSLATE_SPEED(0.01f)
 , deg2Rad(0.0174532925)
 , inPaintingMode(false)
+, mouseClicked(false)
 {
   modelCount = 0;
   QWidget *controls = createDialog(tr("Controls"));
@@ -128,6 +129,19 @@ SceneT<M>::SceneT()
   deleteButton = new QPushButton(tr("Delete"));
   controls->layout()->addWidget(deleteButton);
   deleteButton->setHidden(true);
+
+
+  geoTreeSpinBox = new QSpinBox();
+  geoTreeSpinBox->setMinimum(1);
+  geoTreeSpinBox->setMaximum(20);
+  geoTreeSpinBox->setPrefix("k: ");
+  controls->layout()->addWidget(geoTreeSpinBox);
+  geoTreeSpinBox->setHidden(true);
+
+  geoTreeButton = new QPushButton(tr("GeoTree"));
+  controls->layout()->addWidget(geoTreeButton);
+  geoTreeButton->setHidden(true);
+
 
   //QWidget *widgets[] = { meshes, controls, examples  };
   QWidget *widgets[] = { controls };
@@ -256,7 +270,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
   double sizeM1 = computeSnapRegionSize(m1,m2);
   double sizeM2 = computeSnapRegionSize(m2,m1);
   double snapSize = sizeM1 < sizeM2 ? sizeM1 : sizeM2;
-  snapSize = sizeM1;
+  snapSize = 0.2;
   std::vector<size_t> m1SnapRegion = computeSnapRegion(m1, snapSize);
   std::vector<size_t> m2SnapRegion = computeSnapRegion(m2, snapSize);
   std::cout << snapSize << " " << sizeM1 << sizeM2 << " snap\n";
@@ -381,7 +395,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
         Point vertex = m1->mesh.point(*v_it);
         Eigen::Vector3d p = Eigen::Vector3d(vertex[0], vertex[1], vertex[2]);
         p = R * p;
-        m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) +  Point(T[0], T[1], T[2]));
+        m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) - Point(T[0], T[1], T[2]));
         it++;
       }
     }
@@ -725,6 +739,8 @@ SceneT<M>::loadMesh(const QString filePath)
           deleteButton->setHidden(false);
           pasteButton->setHidden(false);
           copyButton->setHidden(false);
+          geoTreeButton->setHidden(false);
+          geoTreeSpinBox->setHidden(false);
           break;
         case 2:
           radio3->setHidden(false);
@@ -798,7 +814,7 @@ void
 SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
   QGraphicsScene::mouseMoveEvent(event);
-  if(inPaintingMode) paintFaces(event);
+ if(inPaintingMode && mouseClicked) paintFaces(event); 
   
   if (event->isAccepted())
     return;
@@ -818,12 +834,14 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
       }
       else//if(radioId  != 1)
       {
+
         moveMeshInOneAxis(event);
         models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
         models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
         //models[radioId-2]->updateHorizontal(p[0] * TANSLATE_SPEED);
         //models[radioId-2]->updateVertical(p[1] * TANSLATE_SPEED);
         //models[radioId-2]->updateZAxis(p[2] * TANSLATE_SPEED);
+
         //models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
         //models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
         //models[radioId-2]->updateZAxis(0 * TANSLATE_SPEED);
@@ -862,11 +880,15 @@ SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
     //paintFaces(event);
     //inPaintingMode = true;
   //}else {
-  int index = getClickedMeshIndex(event);
-  if (index >= 0)
-  clickRadioButton(index+2);
-  else
-  clickRadioButton(1);
+
+  mouseClicked = true;
+
+  //int index = getClickedMeshIndex(event);
+  //if (index >= 0)
+    //clickRadioButton(index+2);
+  //else
+    //clickRadioButton(1);
+
   QGraphicsScene::mousePressEvent(event);
   if (event->isAccepted())
     return;
@@ -881,13 +903,13 @@ void
 SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
 
+  mouseClicked = false;
   QGraphicsScene::mouseReleaseEvent(event);
   if (event->isAccepted())
     return;
   const int delta = m_time.elapsed() - m_mouseEventTime;
   event->accept();
   update();
-  inPaintingMode = false;
 }
 
 template <typename M>
@@ -985,7 +1007,7 @@ SceneT<M>::getClickedMeshIndex(QGraphicsSceneMouseEvent *event){
   Nhits = glRenderMode(GL_RENDER);
   selected++;
   }
-  if (models[selected-1] != NULL && Nhits != 0){
+  if (models[selected-1] != NULL){
     return selected-1;
   }else {
     return -1;
@@ -1005,7 +1027,7 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
     
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
-    gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.01, 0.1, viewport);
+    gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.001, 0.001, viewport);
     gluPerspective(70, width() / height(), 0.01, 1000);
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
@@ -1019,6 +1041,9 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
     glInitNames();
     glPushName( 0xffffffff );
     if (models[selected] != NULL) models[selected]->render();
+
+    //std::cout << selected << "q\n";
+
     glDisable(GL_MULTISAMPLE);
     
     glPopMatrix();
@@ -1028,23 +1053,38 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
   
     GLuint Nhits = glRenderMode(GL_RENDER);
     clicked == false;
-    std::cout << Nhits << " hits\n";
+
+    //std::cout << "Nhits " << Nhits << "\n";
+
+    //std::cout << Nhits << " hits\n";
+
     if (Nhits > 0){
       GLuint item;
       GLuint front;
+      GLuint min = 0;
       for(size_t i = 0, index = 0; i < Nhits; i++ )
       {
         GLuint nitems = PickBuffer[index++];
-        index+= 2;
-        for(size_t j = 0; j < nitems; j++ )
+        //std::cout << "nitems " << nitems << "\n";
+        GLuint zmin = PickBuffer[index++];
+        GLuint zmax = PickBuffer[index++];
+        //std::cout << "zmin " << zmin << "\n";
+        //std::cout << "zmax " << zmax << "\n";
+        if(nitems == 1)
         {
-          item = PickBuffer[index++];
+          if(min == 0){
+            min = zmin;
+            item = PickBuffer[index++];
+          }
+          else if(min > zmin)
+          {
+            min = zmin;
+            item = PickBuffer[index++];
+          }
         }
-        models[selected]->select(item);
       }
-    } 
-
-
+      models[selected]->select(item);
+    }
 }
 
 template <typename M>
@@ -1196,7 +1236,8 @@ SceneT<M>::removeMesh()
     deleteButton->setHidden(true);
     pasteButton->setHidden(true);
     copyButton->setHidden(true);
-
+    geoTreeButton->setHidden(true);
+    geoTreeSpinBox->setHidden(true);
   }
   else
   {
@@ -1218,6 +1259,8 @@ SceneT<M>::removeMesh()
       deleteButton->setHidden(true);
       pasteButton->setHidden(true);
       copyButton->setHidden(true);
+      geoTreeButton->setHidden(true);
+      geoTreeSpinBox->setHidden(true);
       modelCount = 0;
     }
   }
@@ -1287,6 +1330,11 @@ void
 SceneT<M>::cut()
 {
   std::cout << "Cut Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId != 1)
+  {
+    models[radioId-2]->cut();
+  }
 }
 
 template <typename M>
@@ -1320,6 +1368,21 @@ void
 SceneT<M>::deleteSection()
 {
   std::cout << "Delete Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId != 1 && models[radioId-2] != NULL){
+    models[radioId-2]->deleteSink();
+  }
 }
 
+template <typename M>
+void
+SceneT<M>::geoTree()
+{
+  std::cout << "GeoTree Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId != 1 && models[radioId-2] != NULL){
+    models[radioId-2]->createGeoTree(geoTreeSpinBox->value());
+  }
+
+}
 #endif

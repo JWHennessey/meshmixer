@@ -24,6 +24,7 @@ struct MyTraits : public OpenMesh::DefaultTraits
     void set_gauss(const float& _gauss) { gauss_ = _gauss; }
   };
 
+
   HalfedgeAttributes(OpenMesh::Attributes::PrevHalfedge);
 };
 
@@ -31,7 +32,6 @@ typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits>  MyMesh;
 //typedef MyMesh::ConstFaceVertexIter FVI;
 typedef MyMesh::Point Point;
 typedef Eigen::MatrixX3d PointMatrix;
-
-
+typedef Eigen::Vector3d Vec;
 
 #endif
