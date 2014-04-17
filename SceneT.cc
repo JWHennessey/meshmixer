@@ -6,7 +6,7 @@
 #include <QVector3D>
 #include "GLUT/glut.h"
 #include <QtGui>
-#include <QtOpenGL>
+//#include <QtOpenGL>
 #include <QDoubleSpinBox>
 #include <OpenMesh/Core/Utils/vector_cast.hh>
 #include <OpenMesh/Tools/Utils/Timer.hh>
@@ -173,9 +173,9 @@ SceneT<M>::setDefaultLight(void)
   GLfloat pos1[] = { 0.1,  0.1, -0.02, 0.0};
   GLfloat pos2[] = {-0.1,  0.1, -0.02, 0.0};
   GLfloat pos3[] = { 0.0,  0.0,  0.1,  0.0};
-  GLfloat col1[] = { 1.0,  1.0,  1.0,  1.0};
-  GLfloat col2[] = { 1.0,  1.0,  1.0,  1.0};
-  GLfloat col3[] = { 1.0,  1.0,  1.0,  1.0};
+  GLfloat col1[] = { 1.0,  1.0,  1.0,  0.3};
+  GLfloat col2[] = { 1.0,  1.0,  1.0,  0.3};
+  GLfloat col3[] = { 1.0,  1.0,  1.0,  0.3};
  
   glEnable(GL_LIGHT0);    
   glLightfv(GL_LIGHT0,GL_POSITION, pos1);
@@ -250,17 +250,200 @@ template <typename M>
 void
 SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
 {
-  std::vector<size_t> m1SnapRegion = computeSnapRegion(m1, m2);
-  std::vector<size_t> m2SnapRegion = computeSnapRegion(m2, m1);
-  std::cout << &m1SnapRegion << " " << &m2SnapRegion << "\n";
+  typedef nanoflann::KDTreeEigenMatrixAdaptor< PointMatrix > my_kd_tree_t;
+  m1->applyTransformations();
+  m2->applyTransformations();
+  double sizeM1 = computeSnapRegionSize(m1,m2);
+  double sizeM2 = computeSnapRegionSize(m2,m1);
+  double snapSize = sizeM1 < sizeM2 ? sizeM1 : sizeM2;
+  snapSize = sizeM1;
+  std::vector<size_t> m1SnapRegion = computeSnapRegion(m1, snapSize);
+  std::vector<size_t> m2SnapRegion = computeSnapRegion(m2, snapSize);
+  std::cout << snapSize << " " << sizeM1 << sizeM2 << " snap\n";
+
+  //OpenMesh::VPropHandleT< double > gauss;
+  int iterations = 1;
+  int iterCount = 0;
+  int vcount = m1->mesh.n_vertices();
+  while (iterCount < iterations){
+    float scaling[vcount];
+    std::vector< Matrix<double, 3, 3> > rotations;
+    rotations.reserve(m1->mesh.n_vertices());
+    Matrix<double, Dynamic, 3> translations(vcount,3);
+    
+    //Find correspondence φ of SA to SB
+    std::vector<size_t> correspondVector = findCorrespondence(m1,m2,m1SnapRegion,m2SnapRegion);
+    int elasticity = 1;
+    my_kd_tree_t b_mat_index(3, m1->boundaryMatrix, 10);
+    b_mat_index.index->buildIndex();
+    PointMatrix m1Matrix = m1->buildMatrix();
+
+    //For each point pi in MA Find the local neighborhood N(pi) Calculate the transformation Ti based on φ|N(pi)
+    for (size_t vi = 0; vi < vcount; vi++){
+
+      std::vector<double> query_pt(3);
+      query_pt[0] =  m1Matrix(vi,0);
+      query_pt[1] =  m1Matrix(vi,1);
+      query_pt[2] =  m1Matrix(vi,2);
+      
+      //calculate distance to snapping region
+      std::vector<size_t> ret_index(1);
+      std::vector<double> out_dist_sqr(1);
+      nanoflann::KNNResultSet<double> resultSet(1);
+      resultSet.init(&ret_index[0], &out_dist_sqr[0]);
+      
+      b_mat_index.index->findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(0));
+      double dist = pow(out_dist_sqr[0],0.5) - snapSize;
+      
+      if (dist == 0) dist = DBL_MIN;
+      long indices = pow((iterCount*elasticity)/dist,2);
+      std::cout << exp(-indices) << " exp\n";
+      double radius = snapSize * exp(-indices);
+      
+      std::cout << radius << " radius\n";
+      //for points outside the snapping region offset with their distance to the snapping region
+      if (dist > 0) {
+        radius += dist;
+        std::cout << radius << " radius2\n";
+      }
+      std::vector<size_t> neighbours = findLocalNeighbourhood(query_pt, m1Matrix, radius);
+      std::vector<size_t> intersection;
+      intersection.reserve(m1SnapRegion.size());
+      
+      std::sort(neighbours.begin(), neighbours.end());
+      std::sort(m1SnapRegion.begin(), m1SnapRegion.end());
+      std::set_intersection(neighbours.begin(),neighbours.end(),m1SnapRegion.begin(),m1SnapRegion.end(),std::back_inserter(intersection));
+      std::cout << intersection.size() << " " << neighbours.size() << " " << m1SnapRegion.size() << " inter\n";
+
+      //bounding boxes
+      Vec3f lbbMin, lbbMax, cbbMin, cbbMax;
+      //lbbMin = lbbMax = OpenMesh::vector_cast<Vec3f>(m1->mesh.point(m1->mesh.vertex_handle(intersection[0])));
+      
+      PointMatrix localMatrix(intersection.size(),3);
+      PointMatrix correspondMatrix(intersection.size(),3);
+      int x = 0;
+      for (size_t i = 0; i < m1SnapRegion.size(); i++){
+        for (size_t j = 0; j < intersection.size(); j++){
+          if (m1SnapRegion[i] == intersection[j]){
+            VertexHandle vh = m1->mesh.vertex_handle(intersection[j]);
+            Point p = m1->mesh.point(vh);
+            lbbMin.minimize( OpenMesh::vector_cast<Vec3f>(p));
+            lbbMax.maximize( OpenMesh::vector_cast<Vec3f>(p));
+            localMatrix(x,0) = p[0];
+            localMatrix(x,1) = p[1];
+            localMatrix(x,2) = p[2];
+            
+            VertexHandle c_vh = m2->mesh.vertex_handle(correspondVector[i]);
+            Point q = m2->mesh.point(c_vh);
+            cbbMin.minimize( OpenMesh::vector_cast<Vec3f>(q));
+            cbbMax.maximize( OpenMesh::vector_cast<Vec3f>(q));
+            correspondMatrix(x,0) = q[0];
+            correspondMatrix(x,1) = q[1];
+            correspondMatrix(x,2) = q[2];
+            x++;
+          }
+        }
+      }
+      //std::cout << correspondMatrix(0,0) << "corMat \n";
+      float scale = (lbbMax - lbbMin).length() / (cbbMax - cbbMax).length();
+      Matrix<double, 1, 3> localMean = localMatrix.colwise().mean();
+      Matrix<double, 1, 3> coreMean = correspondMatrix.colwise().mean();
+
+      PointMatrix qHat(correspondMatrix.rows(), 3);
+      PointMatrix pHat(localMatrix.rows(), 3);
+      
+      calcBaryCenteredPoints(qHat, correspondMatrix);
+      calcBaryCenteredPoints(pHat, localMatrix);
+      
+      Matrix<double, 3, 3> A(3,3);
+      generateAMatrix(A, pHat, qHat);
+      
+      JacobiSVD< MatrixXd > svd(A, ComputeThinU | ComputeThinV);
+      
+      Matrix<double, 3, 3> R = svd.matrixU() * svd.matrixV().transpose();
+      Matrix<double, 1, 3> temp1 = (R * localMean.transpose());
+      Matrix<double, 1, 3> temp2 = coreMean;
+      Matrix<double, 1, 3> t = temp1 - temp2;
+      
+      float li = iterCount/iterations;
+      int it = 0;
+      for (typename M::VertexIter v_it=m1->mesh.vertices_begin(); v_it!=m1->mesh.vertices_end(); ++v_it)
+      {
+        Matrix<double, 3, 3> R = rotations[it];
+        float S = scaling[it];
+        Matrix<double, 1, 3> T = translations.row(it);
+        R = R * li;
+        S = S * li;
+        T = T * li;
+        //scaling
+        Point vertex = m1->mesh.point(*v_it);
+        Eigen::Vector3d p = Eigen::Vector3d(vertex[0], vertex[1], vertex[2]);
+        p = R * p;
+        m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) +  Point(T[0], T[1], T[2]));
+        it++;
+      }
+    }
+    std::cout << "Iteration " << iterCount << "\n";
+    iterCount++;
+  }
+}
+
+template <typename M>
+void
+runSoftICP(){
   
 }
 
 template <typename M>
 std::vector<size_t>
-SceneT<M>::computeSnapRegion(QtModelT<M>* m1, QtModelT<M>* m2)
+findCorrespondence(QtModelT<M>* m1, QtModelT<M>* m2, std::vector<size_t> m1SnapRegion, std::vector<size_t> m2SnapRegion){
+  std::vector<size_t> correspondVector;
+  correspondVector.reserve(m1SnapRegion.size());
+  for (size_t i = 0; i < m1SnapRegion.size(); i++){
+    VertexHandle m1Handle = m1->mesh.vertex_handle(m1SnapRegion[i]);
+    typename M::Normal m1Norm = m1->mesh.normal(m1Handle);
+    Point p = m1->mesh.point(m1Handle);
+    float closest = 999;
+    size_t correspond = 0;
+    for (size_t j = 0; j < m2SnapRegion.size(); j++){
+      VertexHandle m2Handle = m2->mesh.vertex_handle(m2SnapRegion[j]);
+      typename M::Normal m2Norm = m2->mesh.normal(m2Handle);
+      Point q = m2->mesh.point(m2Handle);
+      float euclidist = (q-p).length();
+      float normdist = acosf(m1Norm|m2Norm);
+      float gaussdist = m1->mesh.data(m1Handle).gauss() - m2->mesh.data(m2Handle).gauss();//set_gaussian//m1->mesh.property(gauss,m1Handle);
+      float wdist = 0.6 * euclidist + 0.2 * normdist + 0.2 * gaussdist;
+      if (wdist < closest){
+        closest = wdist;
+        correspond = j;
+      }
+    }
+    correspondVector.push_back(correspond);
+  }
+  return correspondVector;
+}
+
+template <typename M>
+std::vector<size_t>
+SceneT<M>::findLocalNeighbourhood(std::vector<double> query_pt, PointMatrix m1Matrix, double radius){
+  typedef nanoflann::KDTreeEigenMatrixAdaptor< PointMatrix >  my_kd_tree_t;
+  my_kd_tree_t mat_index(3, m1Matrix, 10);
+  mat_index.index->buildIndex();
+  std::vector<size_t> neighbours;
+  std::vector< std::pair< size_t, double > > resultPairs;
+  resultPairs.reserve(m1Matrix.rows());
+  size_t count = mat_index.index->radiusSearch(&query_pt[0], radius, resultPairs, nanoflann::SearchParams(true));
+  neighbours.reserve(count);
+  for (size_t j = 0; j < count; j++){
+    neighbours.push_back(resultPairs[j].first);
+  }
+  return neighbours;
+}
+
+template <typename M>
+double
+computeSnapRegionSize(QtModelT<M>* m1, QtModelT<M>* m2)
 {
-  std::vector<size_t> snapRegion;
   typedef nanoflann::KDTreeEigenMatrixAdaptor< PointMatrix >  my_kd_tree_t;
   
   const size_t num_results = 1;
@@ -268,15 +451,16 @@ SceneT<M>::computeSnapRegion(QtModelT<M>* m1, QtModelT<M>* m2)
   PointMatrix m2Matrix = m2->buildMatrix();
   //We find the set of closest points to the other shape boundary loop
   
-  //m1 find clost points on m2 boundary
+  //m1 find closest points on m2 boundary
   my_kd_tree_t mat_index(3, m1Matrix, 10);
   mat_index.index->buildIndex();
   
-  int rowCount = m2->boundaryPoints.size();
-  Matrix<double, Dynamic, 1> mappings(rowCount, 1);
-  Matrix<double, Dynamic, 1> distances(rowCount, 1);
+  int m2bSize = m2->boundaryPoints.size();
+  Matrix<double, Dynamic, 1> mappings(m2bSize, 1);
+  Matrix<double, Dynamic, 1> distances(m2bSize, 1);
   
-  for(int i=0; i < rowCount; i++)
+  //for each point in m2 boundary loop find closest point in m1
+  for(int i=0; i < m2bSize; i++)
   {
     std::vector<double> query_pt(3);
     query_pt[0] =  m2->boundaryMatrix(i,0);
@@ -289,57 +473,206 @@ SceneT<M>::computeSnapRegion(QtModelT<M>* m1, QtModelT<M>* m2)
     nanoflann::KNNResultSet<double> resultSet(num_results);
     
     resultSet.init(&ret_index[0], &out_dist_sqr[0] );
-    mat_index.index->findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(10));
+    mat_index.index->findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(0));
+    
+    
+    glVertex3f(query_pt[0], query_pt[1], query_pt[2]);
+    glVertex3f(m1Matrix(ret_index[0],0),m1Matrix(ret_index[0],1),m1Matrix(ret_index[0],2));
     
     mappings(i, 0) = ret_index[0];
     distances(i, 0) = out_dist_sqr[0];
   }
+  
   //Next, we compute the geodesic distance for each point in the set to their own boundary loop.
   my_kd_tree_t b_mat_index(3, m1->boundaryMatrix, 10);
   b_mat_index.index->buildIndex();
   double snapMax = 0;
-  for(int i=0; i < rowCount; i++)
+  
+  for(int i=0; i < m2bSize; i++)
   {
+    int setIndex = mappings(i,0);
     std::vector<double> query_pt(3);
-    query_pt[0] =  mappings(i,0);
-    query_pt[1] =  mappings(i,1);
-    query_pt[2] =  mappings(i,2);
-    
+    query_pt[0] =  m1Matrix(setIndex,0);
+    query_pt[1] =  m1Matrix(setIndex,1);
+    query_pt[2] =  m1Matrix(setIndex,2);
+    //m1->colourFaceFromVertexIndex(m1->boundaryPoints[i]);
     std::vector<size_t> ret_index(num_results);
     std::vector<double> out_dist_sqr(num_results);
     nanoflann::KNNResultSet<double> resultSet(num_results);
+    resultSet.init(&ret_index[0], &out_dist_sqr[0]);
     
-    resultSet.init(&ret_index[0], &out_dist_sqr[0] );
-    mat_index.index->findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(10));
-    
+    b_mat_index.index->findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(0));
     //We define the snapping region size R as the maximum of the geodesic distances.
-    if (out_dist_sqr[0] > snapMax) snapMax = out_dist_sqr[0];
+    double dist = pow(out_dist_sqr[0],0.5);
+    if (dist > snapMax) {
+      std::cout << dist << " > " << snapMax << "\n";
+      snapMax = dist;
+    }
   }
+  std::cout << snapMax << " maxdist \n";
+  return snapMax;
+}
+
+template <typename M>
+std::vector<size_t>
+SceneT<M>::computeSnapRegion(QtModelT<M>* m1, float snapMax)
+{
+  typedef nanoflann::KDTreeEigenMatrixAdaptor< PointMatrix >  my_kd_tree_t;
+  PointMatrix m1Matrix = m1->buildMatrix();
+  my_kd_tree_t mat_index(3, m1Matrix, 10);
+  mat_index.index->buildIndex();
+  std::vector<size_t> snapRegion;
   //Thus, the sub-mesh within R geodesic distance from the boundary loop is defined as the snapping region
-  for(int i=0; i < rowCount; i++)
+  //for each boudary point find all points within radius
+  for(size_t i=0; i < m1->boundaryPoints.size(); i++)
   {
     std::vector<double> query_pt(3);
-    query_pt[0] =  mappings(i,0);
-    query_pt[1] =  mappings(i,1);
-    query_pt[2] =  mappings(i,2);
-    
-    std::vector<size_t> ret_index(num_results);
-    std::vector<double> out_dist_sqr(num_results);
-    nanoflann::KNNResultSet<double> resultSet(num_results);
+    query_pt[0] = m1->boundaryMatrix(i,0);
+    query_pt[1] = m1->boundaryMatrix(i,1);
+    query_pt[2] = m1->boundaryMatrix(i,2);
     
     std::vector< std::pair< size_t, double > > resultPairs;
     resultPairs.reserve(m1->getNoVerticies());
     size_t count = mat_index.index->radiusSearch(&query_pt[0], snapMax, resultPairs, nanoflann::SearchParams(true));
     snapRegion.reserve(count);
     for (size_t j = 0; j < count; j++){
-      m1->select(resultPairs[j].first);
+      m1->colourFaceFromVertexIndex(resultPairs[j].first);
       snapRegion.push_back(resultPairs[j].first);
     }
   }
+  //std::cout << snapRegion.size() << " ";
   std::sort(snapRegion.begin(), snapRegion.end());
   snapRegion.erase(std::unique(snapRegion.begin(), snapRegion.end()), snapRegion.end());
+  //std::cout << snapRegion.size() << " unique\n";
   return snapRegion;
 }
+
+template <typename M>
+void
+SceneT<M>::generateAMatrix(Matrix<double, 3, 3>  &A, const PointMatrix &qHat, const PointMatrix &pHat)
+{
+  A = (pHat.transpose()*qHat)*(qHat.transpose()*qHat).inverse();
+}
+
+template <typename M>
+void
+SceneT<M>::calcBaryCenteredPoints(PointMatrix &matHat, const PointMatrix &mat)
+{
+  Matrix<double, 1, 3> mean = mat.colwise().mean();
+  matHat = mat.rowwise() - mean;
+}
+
+/*
+template <typename M>
+bool
+runICPTwoMeshes(QtModelT<M>* m1, QtModelT<M>* m2, int iterations)
+{
+  //q = still = m1, p = mover = m2;
+
+  bool notConverged = true;
+  int iterCount = 0;
+  while(notConverged)
+  {
+    const float max_range = 0.1;
+    
+    const size_t num_results = 1;
+    PointMatrix qAll = m1->buildMatrix();
+    PointMatrix pAll = m2->buildMatrix();
+    
+    typedef nanoflann::KDTreeEigenMatrixAdaptor< PointMatrix >  my_kd_tree_t;
+    my_kd_tree_t mat_index(3, qAll, 10);
+    mat_index.index->buildIndex();
+    
+    int rowCount = m2->getNoVerticies();
+    std::cout << rowCount << "rows \n";
+    Matrix<double, Dynamic, 1> mappings(rowCount, 1);
+    Matrix<double, Dynamic, 1> distances(rowCount, 1);
+    
+    for(int i=0; i < rowCount; i++)
+    {
+      std::vector<double> query_pt(3);
+      query_pt[0] = pAll(i, 0);
+      query_pt[1] = pAll(i, 1);
+      query_pt[2] = pAll(i, 2);
+      
+      std::vector<size_t>   ret_index(num_results);
+      std::vector<double>    out_dist_sqr(num_results);
+      
+      nanoflann::KNNResultSet<double> resultSet(num_results);
+      
+      resultSet.init(&ret_index[0], &out_dist_sqr[0] );
+      mat_index.index->findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(0));
+      
+      mappings(i, 0) = ret_index[0];
+      distances(i, 0) = out_dist_sqr[0];
+    }
+    
+    double distThreshold = (max_range < 4 * distances.mean()) ? max_range : 4 * distances.mean();
+    std::vector<int> goodPairs;
+    goodPairs.reserve(pAll.rows());
+    for(int i = 0; i < rowCount; i++)
+    {
+      if(distances(i, 0) <= distThreshold)
+        goodPairs.push_back(i);
+    }
+    
+    PointMatrix q(goodPairs.size(), 3);
+    PointMatrix p(goodPairs.size(), 3);
+    for(int c = 0; c < (int)goodPairs.size(); c++)
+    {
+      p.row(c) = pAll.row(goodPairs[c]);
+      q.row(c) = qAll.row(mappings(goodPairs[c], 0));
+      //std::cout << "Mapping" << p.row(c) << "\t" << q.row(c) << "\t" << (p.row(c)-q.row(c)).norm()  << "\n";
+    }
+    
+    PointMatrix qHat(q.rows(), 3);
+    PointMatrix pHat(p.rows(), 3);
+    
+    getBaryCenteredPoints(qHat, q);
+    getBaryCenteredPoints(pHat, p);
+    
+    Matrix<double, 3, 3> A(3,3);
+    generateA(A, pHat, qHat);
+    
+    JacobiSVD< MatrixXd > svd(A, ComputeThinU | ComputeThinV);
+    
+    Matrix<double, 3, 3> R = svd.matrixU() * svd.matrixV().transpose();
+    Matrix<double, 1, 3> temp1 = (R * p.colwise().mean().transpose());
+    Matrix<double, 1, 3> temp2 = q.colwise().mean();
+    Matrix<double, 1, 3> t = temp1 - temp2;
+    std::cout << "Iteration " << iterCount << "\n";
+    
+    //std::cout << R << "\n";
+    //std::cout << t << "\n";
+    
+    if (isnan(R(0,0) + R(1,1) + R(2,2)) || isinf(t.norm()) ) {
+      std::cout << "threw error " << "\n\n";
+      std::cout << "Sum of diagonal of R " << (R(0,0) + R(1,1) + R(2,2)) << "\n";
+      std::cout << "Norm of t " << t.norm() << "\n\n";
+      return false;
+    }
+    m2->updateTransformations(R, t(0, 0), t(0,1), t(0, 2));
+    
+    std::cout << "Sum of diagonal of R " << (R(0,0) + R(1,1) + R(2,2)) << "\n";
+    std::cout << "Norm of t " << t.norm() << "\n\n";
+    
+    if(t.norm() < 0.00001 && (R(0,0) + R(1,1) + R(2,2)) > 2.999)
+    {
+      std::cout << "Converged in " << iterCount << " iterations"  << "\n";
+      notConverged = false;
+      return true;
+    } else if(iterCount >= iterations-1)
+    {
+      notConverged = false;
+      std::cout << "No convergence after " << iterations << " iterations"   << "\n";
+      return false;
+    }
+    iterCount++;
+  }
+  return false;
+}
+*/
+
 
 template <typename M>
 void
@@ -420,6 +753,7 @@ SceneT<M>::loadMesh(const QString filePath)
           break;
       }
     }
+    clickRadioButton(modelCount+1);
 
     //std::clog << m_mymesh.n_vertices() << " vertices, "
     //<< m_mymesh.n_edges()    << " edge, "
@@ -482,19 +816,7 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
       }
       else//if(radioId  != 1)
       {
-        //typedef typename M::Point Point;
-        QVector3D modelRotation = m_rotation;
-        modelRotation = modelRotation * deg2Rad;
-        Eigen::AngleAxis<float> aax(modelRotation.x(), Eigen::Vector3f(1, 0, 0));
-        Eigen::AngleAxis<float> aay(modelRotation.y(), Eigen::Vector3f(0, 1, 0));
-        Eigen::AngleAxis<float> aaz(modelRotation.z(), Eigen::Vector3f(0, 0, 1));
-        Eigen::Quaternion<float> rotation = aax * aay * aaz;
-
-        Eigen::Vector3f p = Eigen::Vector3f(delta.x(), delta.y(), 0);
-        p = rotation.inverse() * p;
-        std::cout << m_rotation.x() << " " << m_rotation.y() << " " << m_rotation.z() << " de\n";
-        std::cout << p[0] << " " << p[1] << " " << p[2] << "\n";
-        //delta = R * delta;
+        moveMeshInOneAxis(event);
         models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
         models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
         //models[radioId-2]->updateHorizontal(p[0] * TANSLATE_SPEED);
@@ -520,6 +842,9 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
       {
         models[radioId-2]->updateRotation(angularImpulse);
       }
+    }
+    for (int i = 0; i != modelCount; i++) {
+      if(models[i] != NULL) models[i]->render();
     }
     event->accept();
     update();
@@ -614,7 +939,7 @@ SceneT<M>::keyPressEvent( QKeyEvent* event)
         models[radioId-2]->updateHorizontal(-TANSLATE_SPEED);
         break;
       case Key_S:
-        softICP(models[radioId-2], models[radioId-1]);
+        if (models[0] != NULL && models[1] != NULL) softICP(models[0], models[1]);
     }
   }
   event->accept();
@@ -635,7 +960,7 @@ SceneT<M>::getClickedMeshIndex(QGraphicsSceneMouseEvent *event){
   GLint viewport[4];
   glGetIntegerv(GL_VIEWPORT, viewport);
   gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.01, 0.1, viewport);
-  gluPerspective(70, width() / height(), 0.01, 1000);
+  gluPerspective(70, width() / height(), 0.0001, 1000);
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
   glLoadIdentity();
@@ -648,7 +973,6 @@ SceneT<M>::getClickedMeshIndex(QGraphicsSceneMouseEvent *event){
   glInitNames();
   glPushName( 0xffffffff );
   if (models[selected] != NULL) models[selected]->render();
-  std::cout << selected << "q\n";
   glDisable(GL_MULTISAMPLE);
   
   glPopMatrix();
@@ -693,7 +1017,6 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
     glInitNames();
     glPushName( 0xffffffff );
     if (models[selected] != NULL) models[selected]->render();
-    std::cout << selected << "q\n";
     glDisable(GL_MULTISAMPLE);
     
     glPopMatrix();
@@ -703,19 +1026,17 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
   
     GLuint Nhits = glRenderMode(GL_RENDER);
     clicked == false;
-    std::cout << Nhits << " y\n";
+    std::cout << Nhits << " hits\n";
     if (Nhits > 0){
       GLuint item;
       GLuint front;
       for(size_t i = 0, index = 0; i < Nhits; i++ )
       {
         GLuint nitems = PickBuffer[index++];
-        std::cout << index << " x" << index+1 << " \n";
         index+= 2;
         for(size_t j = 0; j < nitems; j++ )
         {
           item = PickBuffer[index++];
-          std::cout << Nhits << " z" << item << " \n";
         }
         models[selected]->select(item);
       }
@@ -724,6 +1045,65 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
 
 }
 
+template <typename M>
+void
+SceneT<M>::moveMeshInOneAxis(QGraphicsSceneMouseEvent *event)
+{
+  int selected = whichRadioButton() - 2;
+  glRenderMode(GL_SELECT);
+  glMatrixMode(GL_PROJECTION);
+  glPushMatrix();
+  glLoadIdentity();
+  
+  GLint viewport[4];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+  gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.01, 0.1, viewport);
+  gluPerspective(70, width() / height(), 0.01, 1000);
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+  glTranslatef(m_horizontal, m_vertical, -m_distance);
+  glRotatef(m_rotation.x(), 1, 0, 0);
+  glRotatef(m_rotation.y(), 0, 1, 0);
+  glRotatef(m_rotation.z(), 0, 0, 1);
+  
+  glEnable(GL_MULTISAMPLE);
+  glInitNames();
+  glPushName( 0xffffffff );
+  if (models[selected] != NULL) models[selected]->render();
+  glDisable(GL_MULTISAMPLE);
+  
+  glPopMatrix();
+  
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+  
+  GLuint Nhits = glRenderMode(GL_RENDER);
+  clicked == false;
+  std::cout << Nhits << " hits\n";
+  if (Nhits > 0){
+    GLuint item;
+    GLuint front;
+    for(size_t i = 0, index = 0; i < Nhits; i++ )
+    {
+      GLuint nitems = PickBuffer[index++];
+      std::cout << index << " x" << index+1 << " \n";
+      index+= 2;
+      for(size_t j = 0; j < nitems; j++ )
+      {
+        item = PickBuffer[index++];
+      }
+      QPointF delta = event->scenePos() - event->lastScenePos();
+      //typedef typename M::Point Point;
+      QVector3D modelRotation = models[selected]->meshRotation;
+      if (item == 0){
+        models[selected]->updateHorizontal(modelRotation.x() * TANSLATE_SPEED);
+      }
+    }
+  }
+  
+  
+}
 template <typename M>
 void
 SceneT<M>::clickRadioButton(int index){
