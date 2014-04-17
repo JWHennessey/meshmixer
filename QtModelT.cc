@@ -912,6 +912,7 @@ QtModelT<M>::createSourceAndSink()
   int assignedFaces = fuzzyRegion.size();
   while(notUnique)
   {
+    std::cout << "Not unique source" << "\n";
     int f = rand() % mesh.n_faces();
     if(!inRegion(f))
     {
@@ -922,6 +923,8 @@ QtModelT<M>::createSourceAndSink()
   notUnique = true;
   while(notUnique)
   {
+    std::cout << "Not unique sink" << "\n";
+
     int f = rand() % mesh.n_faces();
     if(!inRegion(f))
     {
