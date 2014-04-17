@@ -875,6 +875,10 @@ void
 SceneT<M>::deleteSection()
 {
   std::cout << "Delete Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId != 1 && models[radioId-2] != NULL){
+    models[radioId-2]->deleteSink();
+  }
 }
 
 template <typename M>

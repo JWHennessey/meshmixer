@@ -930,45 +930,71 @@ QtModelT<M>::graphCut()
     g->add_node(); 
     mapping[index++] = *it;
   }
-
-  for(int i = 0; i<mapping.size(); i++)
+  std::cout << "Mapping Created" << "\n";
+  for(int i = 0; i<fuzzyRegion.size(); i++)
   {
-    g->add_tweights(0, distToSource(mapping[i]), distToSink(mapping[i]) );
+    std::cout << "t-weight" << "\n";
+    g->add_tweights(i, distToSource(mapping[i]), distToSink(mapping[i]) );
   }
+  std::cout << "t-weights done" << "\n";
 
-  for(int i = 0; i<mapping.size(); i++)
+  for(int i = 0; i<fuzzyRegion.size(); i++)
   {
+    std::cout << fuzzyRegion.size() - i << "\n";
     typename M::FaceHandle fh = mesh.face_handle(mapping[i]);
     for (typename M::FaceFaceIter ff_it=mesh.ff_iter(fh); ff_it; ++ff_it)
     {
       int otherFaceId = -1;
-      for(int j = 0; j<mapping.size(); i++){
-        if(mappingp[j] == ff_it.handle().idx())
+      for(int j = 0; j<fuzzyRegion.size(); j++){
+        if(mapping[j] == ff_it.handle().idx())
         {
           otherFaceId = j;
         }
       }
       if(otherFaceId != -1)
       {
-        double dist = baryCenterDist(mappingp[j], ff_it.handle().idx());
+        double dist = faceDist(mapping[i], ff_it.handle().idx());
         g->add_edge(i, otherFaceId,  dist, dist );
       }
     }
   }
 
-	int flow = g->maxflow();
 
-	printf("Flow = %d\n", flow);
-	printf("Minimum cut:\n");
+  int flow = g->maxflow();
 
-  for(int i = 0; i<mapping.size(); i++)
+  printf("Flow = %d\n", flow);
+  printf("Minimum cut:\n");
+
+  for(int i = 0; i<fuzzyRegion.size(); i++)
   {
-    if (g->what_segment(i) == GraphType::SOURCE)
+    if (g->what_segment(i) == GraphType::SOURCE){
+      sinkRegion.insert(mapping[i]);
       std::cout << i << " is in the SOURCE set\n";
+      typename M::FaceHandle fh = mesh.face_handle(mapping[i]);
+      mesh.set_color(fh, typename M::Color(255, 0, 0));
+    }
     else
+    {
+      sourceRegion.insert(mapping[i]);
       std::cout << i << " is in the SINK set\n";
- }
-	delete g;
+      typename M::FaceHandle fh = mesh.face_handle(mapping[i]);
+      mesh.set_color(fh, typename M::Color(0, 0, 255));
+    }
+  }
+
+  //typename GraphType::arc_id a;
+  //a = g->get_first_arc();
+  //typename GraphType::node_id u, v;
+  //printf("Arcos do corte mínimo:\n");
+  //for (int i = 0; i < g->get_arc_num(); i++) {
+    //g->get_arc_ends(a, u, v);
+    //if (g->what_segment(u) != g->what_segment(v)) {
+      //printf("%d -> %d\n", u, v);
+    //}
+    //a = g->get_next_arc(a);
+  //}
+
+  delete g;
 
 }
 
@@ -977,22 +1003,74 @@ template<typename M>
 double
 QtModelT<M>::distToSource(int fId)
 {
-
+  double dist = 1000.0;
+  typename M::FaceHandle fh1 = mesh.face_handle(fId);
+  Vec f1 = getFaceCentroid(fh1);
+  for ( auto it = sourceRegion.begin(); it != sourceRegion.end(); ++it )
+  {
+    typename M::FaceHandle fh2 = mesh.face_handle(*it);
+    Vec f2 = getFaceCentroid(fh2);
+    double d = (f1 - f2).norm();
+    if(d < dist)
+      dist = d;
+  }
+  std::cout << "Dist To Source " << dist << "\n";
+  return dist;
 }
 
 template<typename M>
 double
 QtModelT<M>::distToSink(int fId)
 {
-
+  double dist = 1000.0;
+  typename M::FaceHandle fh1 = mesh.face_handle(fId);
+  Vec f1 = getFaceCentroid(fh1);
+  for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
+  {
+    typename M::FaceHandle fh2 = mesh.face_handle(*it);
+    Vec f2 = getFaceCentroid(fh2);
+    double d = (f1 - f2).norm();
+    if(d < dist)
+      dist = d;
+  }
+  std::cout << "Dist To Sink " << dist << "\n";
+  return dist;
 }
 
 template<typename M>
 double
-QtModelT<M>::baryCenterDist(int fId1, int fId2)
+QtModelT<M>::faceDist(int fId1, int fId2)
 {
 
+  
+  double dist = 0.0;
+  
+  //Barycenter Euclidian Distance
+  typename M::FaceHandle fh1 = mesh.face_handle(fId1);
+  Vec f1 = getFaceCentroid(fh1);
+  typename M::FaceHandle fh2 = mesh.face_handle(fId2);
+  Vec f2 = getFaceCentroid(fh2);
+  dist += (f1 - f2).norm();
+
+  //Normal Difference
+  Vec n1 = Vec(mesh.normal(fh1)[0], mesh.normal(fh1)[1], mesh.normal(fh1)[2]);
+  Vec n2 = Vec(mesh.normal(fh2)[0], mesh.normal(fh2)[1], mesh.normal(fh2)[2]);
+  dist += (n1.dot(n2) * 0.1);
+  std::cout << "Face Dist " << dist << "\n";
+  return dist;
 }
 
+
+template<typename M>
+void
+QtModelT<M>::deleteSink()
+{
+  for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
+  {
+    typename M::FaceHandle fh = mesh.face_handle(*it);
+    mesh.delete_face(fh, false);
+  }
+  mesh.garbage_collection();
+}
 
 #endif

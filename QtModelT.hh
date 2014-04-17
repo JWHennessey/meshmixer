@@ -59,6 +59,7 @@ public:
     void createGeoTree(int k);
     std::vector<int> getStroke();
     void cut();
+    void deleteSink();
 private:
     bool facesConnected(int f1, int f2);
     void addToStroke(int f);
@@ -96,7 +97,7 @@ private:
     void regionGrow(int f, std::unordered_set<int>* region, int type);
     double distToSource(int fId);
     double distToSink(int fId);
-    double baryCenterDist(int fId1, int fId2);
+    double faceDist(int fId1, int fId2);
 };
 
 struct Dist
