@@ -270,7 +270,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
   double sizeM1 = computeSnapRegionSize(m1,m2);
   double sizeM2 = computeSnapRegionSize(m2,m1);
   double snapSize = sizeM1 < sizeM2 ? sizeM1 : sizeM2;
-  snapSize = sizeM1;
+  snapSize = 0.2;
   std::vector<size_t> m1SnapRegion = computeSnapRegion(m1, snapSize);
   std::vector<size_t> m2SnapRegion = computeSnapRegion(m2, snapSize);
   std::cout << snapSize << " " << sizeM1 << sizeM2 << " snap\n";
@@ -393,7 +393,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
         Point vertex = m1->mesh.point(*v_it);
         Eigen::Vector3d p = Eigen::Vector3d(vertex[0], vertex[1], vertex[2]);
         p = R * p;
-        m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) +  Point(T[0], T[1], T[2]));
+        m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) - Point(T[0], T[1], T[2]));
         it++;
       }
     }
@@ -1025,7 +1025,7 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
     
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
-    gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.01, 0.1, viewport);
+    gluPickMatrix(event->scenePos().x(), (GLdouble)(viewport[3]-event->scenePos().y()), 0.001, 0.001, viewport);
     gluPerspective(70, width() / height(), 0.01, 1000);
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
