@@ -12,6 +12,18 @@ struct MyTraits : public OpenMesh::DefaultTraits
   FaceAttributes( OpenMesh::Attributes::Normal |
                     OpenMesh::Attributes::Color );
 
+  VertexTraits
+  {
+  private:
+    float gauss_;
+  public:
+    
+    VertexT() : gauss_(0.0f) { }
+    
+    const float& gauss() const { return gauss_; }
+    void set_gauss(const float& _gauss) { gauss_ = _gauss; }
+  };
+
 
   HalfedgeAttributes(OpenMesh::Attributes::PrevHalfedge);
 };

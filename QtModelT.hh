@@ -30,7 +30,7 @@ public:
     typedef std::vector<std::vector< std::pair< size_t, double > > > MapTable;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
     QRectF boundingRect() const;
-    int number;
+    int modelnumber;
     void calcNormals();
     std::vector<VertexHandle> boundaryPoints;
     PointMatrix boundaryMatrix;
@@ -56,23 +56,26 @@ public:
     void nearestNeighbours(double radius, MapTable* resultTable);
     void scale(float alpha);
     void clearColour();
+    void colourFaceFromVertexIndex(int vertexNumber);
     void createGeoTree(int k);
     std::vector<int> getStroke();
     void cut();
     void deleteSink();
+    QVector3D meshRotation;
+
 private:
     bool facesConnected(int f1, int f2);
     void addToStroke(int f);
     void addToFuzzyRegion(int f);
     QVector3D modelRotation;
+    
+    
     QColor modelColor;
     GLfloat vertical;
     GLfloat horizontal;
     GLfloat depth;
     GLfloat zAxis;
     GeoTreeT<M> *geoTree;
-    const float deg2Rad;
-    void findBoundaryVertices();
     std::unordered_set<int> fuzzyRegion;
     std::unordered_set<int> sourceRegion;
     std::unordered_set<int> sinkRegion;
@@ -98,6 +101,11 @@ private:
     double distToSource(int fId);
     double distToSink(int fId);
     double faceDist(int fId1, int fId2);
+    double gauss_curvature(VertexHandle _vh);
+    const float deg2Rad;
+    void findBoundaryVertices();
+    std::vector<VertexHandle> findBoundaryRing(VertexHandle point);
+    Vec3f center;
 };
 
 struct Dist
