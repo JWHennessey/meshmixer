@@ -920,30 +920,77 @@ QtModelT<M>::graphCut()
 		          SINK
 
  */
-  // Cria grafo com número estimado de vértices=4 e arcos=6.
-  GraphType *g = new GraphType(4, 6); 
+  //estimated nunber of nodes and estimated number of edges
+  GraphType *g = new GraphType(fuzzyRegion.size(), fuzzyRegion.size()*4);
 
-  g -> add_node(); 
-	g -> add_node(); 
+  int mapping[fuzzyRegion.size()];
+  int index = 0;
+  for ( auto it = fuzzyRegion.begin(); it != fuzzyRegion.end(); ++it )
+  {
+    g->add_node(); 
+    mapping[index++] = *it;
+  }
 
-	g -> add_tweights( 0,   /* capacities */  10, 5 );
-	g -> add_tweights( 1,   /* capacities */  2, 6 );
-	g -> add_edge( 0, 1,    /* capacities */  3, 4 );
+  for(int i = 0; i<mapping.size(); i++)
+  {
+    g->add_tweights(0, distToSource(mapping[i]), distToSink(mapping[i]) );
+  }
 
-	int flow = g -> maxflow();
+  for(int i = 0; i<mapping.size(); i++)
+  {
+    typename M::FaceHandle fh = mesh.face_handle(mapping[i]);
+    for (typename M::FaceFaceIter ff_it=mesh.ff_iter(fh); ff_it; ++ff_it)
+    {
+      int otherFaceId = -1;
+      for(int j = 0; j<mapping.size(); i++){
+        if(mappingp[j] == ff_it.handle().idx())
+        {
+          otherFaceId = j;
+        }
+      }
+      if(otherFaceId != -1)
+      {
+        double dist = baryCenterDist(mappingp[j], ff_it.handle().idx());
+        g->add_edge(i, otherFaceId,  dist, dist );
+      }
+    }
+  }
+
+	int flow = g->maxflow();
 
 	printf("Flow = %d\n", flow);
 	printf("Minimum cut:\n");
-	if (g->what_segment(0) == GraphType::SOURCE)
-		printf("node0 is in the SOURCE set\n");
-	else
-		printf("node0 is in the SINK set\n");
-	if (g->what_segment(1) == GraphType::SOURCE)
-		printf("node1 is in the SOURCE set\n");
-	else
-		printf("node1 is in the SINK set\n");
 
+  for(int i = 0; i<mapping.size(); i++)
+  {
+    if (g->what_segment(i) == GraphType::SOURCE)
+      std::cout << i << " is in the SOURCE set\n";
+    else
+      std::cout << i << " is in the SINK set\n";
+ }
 	delete g;
+
+}
+
+
+template<typename M>
+double
+QtModelT<M>::distToSource(int fId)
+{
+
+}
+
+template<typename M>
+double
+QtModelT<M>::distToSink(int fId)
+{
+
+}
+
+template<typename M>
+double
+QtModelT<M>::baryCenterDist(int fId1, int fId2)
+{
 
 }
 
