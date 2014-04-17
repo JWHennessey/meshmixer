@@ -191,6 +191,7 @@ QtModelT<M>::addToStroke(int f){
   }else{
     lastStrokeNorm = n;
   }
+  mesh.set_color(face, typename M::Color(0, 255, 255));
 }
 
 //template <typename M>
@@ -344,6 +345,7 @@ QtModelT<M>::render()
   glVertex3f(0, 0, 1.5);
   index++;
   glEnd();
+  index = 0;
   for (; fIt!=fEnd; ++fIt)
   {
     glLoadName(index);
