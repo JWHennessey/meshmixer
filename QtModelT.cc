@@ -1,7 +1,7 @@
 #ifndef MODEL_CC
 #define MODEL_CC
 
-
+#include <stdio.h>
 #include "QtModelT.hh"
 #include <math.h> 
 #include <QFile>
@@ -12,6 +12,9 @@
 #include <cmath>
 #include <math.h> 
 #include <stdlib.h>
+#include <stdio.h>
+#include "maxflow/graph.h"
+
 
 template <typename M>
 QtModelT<M>::QtModelT(M& m)
@@ -900,6 +903,48 @@ void
 QtModelT<M>::graphCut()
 {
   std::cout << "Graph Cut" << "\n";
+  typedef Graph<M, double,double,double> GraphType;
+
+  // !!! Exemplo da página 659 do Cormen !!!
+/*
+		        SOURCE
+		       /       \
+		     1/         \2
+		     /      3    \
+		   node0 -----> node1
+		     |   <-----   |
+		     |      4     |
+		     \            /
+		     5\          /6
+		       \        /
+		          SINK
+
+ */
+  // Cria grafo com número estimado de vértices=4 e arcos=6.
+  GraphType *g = new GraphType(4, 6); 
+
+  g -> add_node(); 
+	g -> add_node(); 
+
+	g -> add_tweights( 0,   /* capacities */  10, 5 );
+	g -> add_tweights( 1,   /* capacities */  2, 6 );
+	g -> add_edge( 0, 1,    /* capacities */  3, 4 );
+
+	int flow = g -> maxflow();
+
+	printf("Flow = %d\n", flow);
+	printf("Minimum cut:\n");
+	if (g->what_segment(0) == GraphType::SOURCE)
+		printf("node0 is in the SOURCE set\n");
+	else
+		printf("node0 is in the SINK set\n");
+	if (g->what_segment(1) == GraphType::SOURCE)
+		printf("node1 is in the SOURCE set\n");
+	else
+		printf("node1 is in the SINK set\n");
+
+	delete g;
+
 }
 
 
