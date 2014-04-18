@@ -62,6 +62,8 @@ public:
     void cut();
     void deleteSink();
     QVector3D meshRotation;
+    void toggleFuzzy();
+    void autoSelect();
 
 private:
     bool facesConnected(int f1, int f2);
@@ -106,6 +108,7 @@ private:
     void findBoundaryVertices();
     std::vector<VertexHandle> findBoundaryRing(VertexHandle point);
     Vec3f center;
+    bool showFuzzy;
 };
 
 struct Dist

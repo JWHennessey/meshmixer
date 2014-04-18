@@ -109,6 +109,14 @@ SceneT<M>::SceneT()
   controls->layout()->addWidget(removeModelButton);
   removeModelButton->setHidden(true);
 
+  autoSelectButton = new QPushButton(tr("Auto Select"));
+  controls->layout()->addWidget(autoSelectButton);
+  autoSelectButton->setHidden(true);
+
+  toggleFuzzyButton = new QPushButton(tr("Toggle Fuzzy Region"));
+  controls->layout()->addWidget(toggleFuzzyButton);
+  toggleFuzzyButton->setHidden(true);
+
   clearFacesButton = new QPushButton(tr("Clear Painted Faces"));
   controls->layout()->addWidget(clearFacesButton);
   clearFacesButton->setHidden(true);
@@ -741,6 +749,8 @@ SceneT<M>::loadMesh(const QString filePath)
           copyButton->setHidden(false);
           geoTreeButton->setHidden(false);
           geoTreeSpinBox->setHidden(false);
+          toggleFuzzyButton->setHidden(false);
+          autoSelectButton->setHidden(false);
           break;
         case 2:
           radio3->setHidden(false);
@@ -1238,6 +1248,8 @@ SceneT<M>::removeMesh()
     copyButton->setHidden(true);
     geoTreeButton->setHidden(true);
     geoTreeSpinBox->setHidden(true);
+    toggleFuzzyButton->setHidden(true);
+    autoSelectButton->setHidden(true);
   }
   else
   {
@@ -1261,7 +1273,9 @@ SceneT<M>::removeMesh()
       copyButton->setHidden(true);
       geoTreeButton->setHidden(true);
       geoTreeSpinBox->setHidden(true);
+      toggleFuzzyButton->setHidden(true);
       modelCount = 0;
+      autoSelectButton->setHidden(true);
     }
   }
 
@@ -1385,4 +1399,30 @@ SceneT<M>::geoTree()
   }
 
 }
+
+
+template <typename M>
+void
+SceneT<M>::autoSelect()
+{
+  std::cout << "Auto Select Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId != 1 && models[radioId-2] != NULL){
+    models[radioId-2]->autoSelect();
+  }
+
+}
+
+template <typename M>
+void
+SceneT<M>::toggleFuzzy()
+{
+  std::cout << "Toggle Fuzzy Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId != 1 && models[radioId-2] != NULL){
+    models[radioId-2]->toggleFuzzy();
+  }
+
+}
+
 #endif

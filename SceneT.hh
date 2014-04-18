@@ -40,6 +40,8 @@ protected:
     QWidget *m_ex2Button;
     QWidget *m_ex3Button;
     QWidget *clearFacesButton;
+    QWidget *autoSelectButton;
+    QWidget *toggleFuzzyButton;
     QWidget *cutButton;
     QWidget *deleteButton;
     QWidget *pasteButton;
@@ -66,7 +68,8 @@ protected:
     std::vector<size_t> computeSnapRegion(QtModelT<M>* m1, QtModelT<M>* m2);
     void clickRadioButton(int index);
     int getClickedMeshIndex(QGraphicsSceneMouseEvent *event);
-
+    void toggleFuzzy();
+    void autoSelect();
 
 private:
     int modelCount;

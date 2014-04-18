@@ -28,6 +28,8 @@ public:
       connect(copyButton, SIGNAL(clicked()), this, SLOT(copySlot()));
       connect(deleteButton, SIGNAL(clicked()), this, SLOT(deleteSlot()));
       connect(geoTreeButton, SIGNAL(clicked()), this, SLOT(geoTreeSlot()));
+      connect(autoSelectButton, SIGNAL(clicked()), this, SLOT(autoSelectSlot()));
+      connect(toggleFuzzyButton, SIGNAL(clicked()), this, SLOT(toggleFuzzySlot()));
     }
 public slots:
     void selectMesh()
@@ -57,8 +59,12 @@ public slots:
     void geoTreeSlot(){
       geoTree();
     }
-
-
+    void autoSelectSlot(){
+      autoSelect();
+    }
+    void toggleFuzzySlot(){
+      toggleFuzzy();
+    }
 
 };
 #endif

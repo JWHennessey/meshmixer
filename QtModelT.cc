@@ -25,6 +25,7 @@ QtModelT<M>::QtModelT(M& m)
   , deg2Rad(0.0174532925)
   , zAxis(0.0f)
   , dest(-1)
+  , showFuzzy(false)
 {
   mesh = m;
   double min_x, max_x, min_y, max_y, min_z, max_z;
@@ -220,7 +221,7 @@ QtModelT<M>::addToFuzzyRegion(int f){
   if(std::find(stroke.begin(), stroke.end(), f) == stroke.end()) {
     fuzzyRegion.insert(f);
     typename M::FaceHandle face = mesh.face_handle(f);
-    mesh.set_color(face, typename M::Color(0, 255, 0));
+    //mesh.set_color(face, typename M::Color(0, 255, 0));
   }
 }
 
@@ -605,6 +606,9 @@ QtModelT<M>::clearColour()
   prev.clear();
   stroke.clear();
   strokeVertices.clear();
+  sourceRegion.clear();
+  sinkRegion.clear();
+  showFuzzy = false; 
 }
 
 template <typename M>
@@ -733,96 +737,11 @@ template<typename M>
 void
 QtModelT<M>::cut()
 {
-  dest = -1;
-  prev.clear();
-  calcStrokeProxies();
-  typename M::FaceHandle face = mesh.face_handle(stroke.front());
-  typename M::FaceVertexIter fv_it = mesh.fv_iter(face);
-  source = fv_it.handle().idx();
-  double distances[mesh.n_vertices()];
-  int previous[mesh.n_vertices()];
-  std::unordered_set<int> q;
-  distances[source] = 0;
-  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
-  {
-    int v = v_it.handle().idx();
-    if(v != source)
-    {
-      distances[v] = 1000.0;
-      previous[v] = NULL;
-    }
-    q.insert(v);
-  }
-  while(!q.empty())
-  {
-    double min = 1001.0;
-    int u;
-    for ( auto i = q.begin(); i != q.end(); ++i )
-    {
-      if(distances[*i] < min)
-      {
-        min = distances[*i];
-        u = *i;
-      }
-    }
-    min = 1001.0;
-    //std::cout << "Q Size Before " << q.size() << "\n";
-    //std::cout << "Removed " << u << "\n";
-    q.erase(u);
-    //std::cout << "Q Size After" << q.size() << "\n";
-    typename M::VertexHandle vh = mesh.vertex_handle(u);
-    for (typename M::VertexVertexIter vv_it=mesh.vv_iter(vh); vv_it; ++vv_it)
-    {
-      int v = vv_it.handle().idx();
-      float alt = distances[u] + cost(u, v);
-      if(alt < distances[v])
-      {
-        distances[v] = alt;
-        previous[v] = u;
-      }
-    }
-  }
-  //std::cout << "Q Empty" << "\n";
-  typename M::FaceHandle destFace = mesh.face_handle(stroke.back());
-  typename M::FaceVertexIter dest_fv_it = mesh.fv_iter(destFace);
-  dest = dest_fv_it.handle().idx();
-  for(int i = 0; i<mesh.n_vertices(); i++)
-  {
-    prev.push_back(previous[i]);
-    //std::cout << previous[i] << "\n";
-    //std::cout << distances[i] << "\n";
-  }
-  //std::cout << "Prev built" << "\n";
-  int to;
-  int from = dest;
-  int counter = 0;
-  while(from != source)
-  {
-    //std::cout << "Add to Fuzzy" << counter++ << "\n";
-    //addToFuzzyRegion(from);
-    typename M::VertexHandle vh1 = mesh.vertex_handle(from);
-    for (typename M::VertexFaceIter ff_it1=mesh.vf_iter(vh1); ff_it1; ++ff_it1)
-    {
-        for (typename M::FaceFaceIter ff_it2=mesh.ff_iter(ff_it1.handle()); ff_it2; ++ff_it2)
-        {
-          for (typename M::FaceFaceIter ff_it3=mesh.ff_iter(ff_it2.handle()); ff_it3; ++ff_it3)
-          {
-            addToFuzzyRegion(ff_it3.handle().idx());
-          }
-          addToFuzzyRegion(ff_it2.handle().idx());
-        }
-        addToFuzzyRegion(ff_it1.handle().idx());
-    }
-    //std::cout << "Source " << source << "\n";
-    //std::cout << "From " << from << "\n";
-    to = prev[from];
-    from = to;
-  }
-  createSourceAndSink();
-  graphCut();
-  fuzzyRegion.clear();
-  sourceRegion.clear();
-  sinkRegion.clear();
+  std::cout << "Cut" << "\n";
+  //graphCut();
+  //fuzzyRegion.clear();
+  //sourceRegion.clear();
+  //sinkRegion.clear();
 }
 
 template<typename M>
@@ -1100,7 +1019,7 @@ QtModelT<M>::distToSource(int fId)
     if(d < dist)
       dist = d;
   }
-  std::cout << "Dist To Source " << dist << "\n";
+  //std::cout << "Dist To Source " << dist << "\n";
   return dist;
 }
 
@@ -1119,7 +1038,7 @@ QtModelT<M>::distToSink(int fId)
     if(d < dist)
       dist = d;
   }
-  std::cout << "Dist To Sink " << dist << "\n";
+  //std::cout << "Dist To Sink " << dist << "\n";
   return dist;
 }
 
@@ -1142,7 +1061,7 @@ QtModelT<M>::faceDist(int fId1, int fId2)
   Vec n1 = Vec(mesh.normal(fh1)[0], mesh.normal(fh1)[1], mesh.normal(fh1)[2]);
   Vec n2 = Vec(mesh.normal(fh2)[0], mesh.normal(fh2)[1], mesh.normal(fh2)[2]);
   dist += (n1.dot(n2) * 0.5);
-  std::cout << "Face Dist " << dist << "\n";
+  //std::cout << "Face Dist " << dist << "\n";
   if(dist < 0.0) dist = 0.001;
   return dist;
 }
@@ -1160,6 +1079,139 @@ QtModelT<M>::deleteSink()
   }
  std::cout << "del complete" << "\n";
   mesh.garbage_collection();
+}
+
+template<typename M>
+void
+QtModelT<M>::toggleFuzzy()
+{
+  for ( auto it = fuzzyRegion.begin(); it != fuzzyRegion.end(); ++it )
+  {
+    typename M::FaceHandle fh = mesh.face_handle(*it);
+    if(!showFuzzy)
+      mesh.set_color(fh, typename M::Color(0, 255, 0));
+    else{
+     std::unordered_set<int>::const_iterator gotSoR = sourceRegion.find(*it);
+     std::unordered_set<int>::const_iterator gotSiR = sinkRegion.find(*it);
+
+     if(gotSoR != sourceRegion.end())
+     {
+      mesh.set_color(fh, typename M::Color(0, 0, 255));
+     }
+     else if(gotSiR != sinkRegion.end())
+     {
+      mesh.set_color(fh, typename M::Color(255, 0, 0));
+
+     }
+     else
+     {
+      mesh.set_color(fh, OpenMesh::Vec3f(modelColor.redF(), modelColor.blueF(), modelColor.greenF()));
+     }
+    }
+ }
+  for (size_t i = 0;  i < stroke.size(); i++ )
+  {
+    typename M::FaceHandle fh = mesh.face_handle(stroke[i]);
+    mesh.set_color(fh, typename M::Color(0, 255, 255));
+
+  }
+  showFuzzy = !showFuzzy;
+}
+
+template<typename M>
+void
+QtModelT<M>::autoSelect()
+{
+  std::cout << "Auto Select" << "\n";
+  dest = -1;
+  prev.clear();
+  calcStrokeProxies();
+  typename M::FaceHandle face = mesh.face_handle(stroke.front());
+  typename M::FaceVertexIter fv_it = mesh.fv_iter(face);
+  source = fv_it.handle().idx();
+  double distances[mesh.n_vertices()];
+  int previous[mesh.n_vertices()];
+  std::unordered_set<int> q;
+  distances[source] = 0;
+  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
+  {
+    int v = v_it.handle().idx();
+    if(v != source)
+    {
+      distances[v] = 1000.0;
+      previous[v] = NULL;
+    }
+    q.insert(v);
+  }
+  while(!q.empty())
+  {
+    double min = 1001.0;
+    int u;
+    for ( auto i = q.begin(); i != q.end(); ++i )
+    {
+      if(distances[*i] < min)
+      {
+        min = distances[*i];
+        u = *i;
+      }
+    }
+    min = 1001.0;
+    //std::cout << "Q Size Before " << q.size() << "\n";
+    //std::cout << "Removed " << u << "\n";
+    q.erase(u);
+    //std::cout << "Q Size After" << q.size() << "\n";
+    typename M::VertexHandle vh = mesh.vertex_handle(u);
+    for (typename M::VertexVertexIter vv_it=mesh.vv_iter(vh); vv_it; ++vv_it)
+    {
+      int v = vv_it.handle().idx();
+      float alt = distances[u] + cost(u, v);
+      if(alt < distances[v])
+      {
+        distances[v] = alt;
+        previous[v] = u;
+      }
+    }
+  }
+  //std::cout << "Q Empty" << "\n";
+  typename M::FaceHandle destFace = mesh.face_handle(stroke.back());
+  typename M::FaceVertexIter dest_fv_it = mesh.fv_iter(destFace);
+  dest = dest_fv_it.handle().idx();
+  for(int i = 0; i<mesh.n_vertices(); i++)
+  {
+    prev.push_back(previous[i]);
+    //std::cout << previous[i] << "\n";
+    //std::cout << distances[i] << "\n";
+  }
+  //std::cout << "Prev built" << "\n";
+  int to;
+  int from = dest;
+  int counter = 0;
+  while(from != source)
+  {
+    //std::cout << "Add to Fuzzy" << counter++ << "\n";
+    //addToFuzzyRegion(from);
+    typename M::VertexHandle vh1 = mesh.vertex_handle(from);
+    for (typename M::VertexFaceIter ff_it1=mesh.vf_iter(vh1); ff_it1; ++ff_it1)
+    {
+        for (typename M::FaceFaceIter ff_it2=mesh.ff_iter(ff_it1.handle()); ff_it2; ++ff_it2)
+        {
+          for (typename M::FaceFaceIter ff_it3=mesh.ff_iter(ff_it2.handle()); ff_it3; ++ff_it3)
+          {
+            addToFuzzyRegion(ff_it3.handle().idx());
+          }
+          addToFuzzyRegion(ff_it2.handle().idx());
+        }
+        addToFuzzyRegion(ff_it1.handle().idx());
+    }
+    //std::cout << "Source " << source << "\n";
+    //std::cout << "From " << from << "\n";
+    to = prev[from];
+    from = to;
+  }
+  createSourceAndSink();
+  showFuzzy = true;
+  toggleFuzzy();
+  graphCut();
 }
 
 #endif
