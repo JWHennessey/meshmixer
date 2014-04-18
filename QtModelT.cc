@@ -738,10 +738,7 @@ void
 QtModelT<M>::cut()
 {
   std::cout << "Cut" << "\n";
-  //graphCut();
-  //fuzzyRegion.clear();
-  //sourceRegion.clear();
-  //sinkRegion.clear();
+  deleteSink();
 }
 
 template<typename M>
@@ -1019,7 +1016,7 @@ QtModelT<M>::distToSource(int fId)
     if(d < dist)
       dist = d;
   }
-  //std::cout << "Dist To Source " << dist << "\n";
+  std::cout << "Dist To Source " << dist << "\n";
   return dist;
 }
 
@@ -1038,7 +1035,7 @@ QtModelT<M>::distToSink(int fId)
     if(d < dist)
       dist = d;
   }
-  //std::cout << "Dist To Sink " << dist << "\n";
+  std::cout << "Dist To Sink " << dist << "\n";
   return dist;
 }
 
@@ -1047,9 +1044,7 @@ double
 QtModelT<M>::faceDist(int fId1, int fId2)
 {
 
-  
   double dist = 0.0;
-  
   //Barycenter Euclidian Distance
   typename M::FaceHandle fh1 = mesh.face_handle(fId1);
   Vec f1 = getFaceCentroid(fh1);
@@ -1060,8 +1055,8 @@ QtModelT<M>::faceDist(int fId1, int fId2)
   //Normal Difference
   Vec n1 = Vec(mesh.normal(fh1)[0], mesh.normal(fh1)[1], mesh.normal(fh1)[2]);
   Vec n2 = Vec(mesh.normal(fh2)[0], mesh.normal(fh2)[1], mesh.normal(fh2)[2]);
-  dist += (n1.dot(n2) * 0.5);
-  //std::cout << "Face Dist " << dist << "\n";
+  dist += (n1.dot(n2) * 0.1);
+  std::cout << "Face Dist " << dist << "\n";
   if(dist < 0.0) dist = 0.001;
   return dist;
 }
@@ -1073,11 +1068,9 @@ QtModelT<M>::deleteSink()
 {
   for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
   {
-    std::cout << "del" << "\n";
     typename M::FaceHandle fh = mesh.face_handle(*it);
     mesh.delete_face(fh, false);
   }
- std::cout << "del complete" << "\n";
   mesh.garbage_collection();
 }
 
@@ -1195,10 +1188,10 @@ QtModelT<M>::autoSelect()
     {
         for (typename M::FaceFaceIter ff_it2=mesh.ff_iter(ff_it1.handle()); ff_it2; ++ff_it2)
         {
-          for (typename M::FaceFaceIter ff_it3=mesh.ff_iter(ff_it2.handle()); ff_it3; ++ff_it3)
-          {
-            addToFuzzyRegion(ff_it3.handle().idx());
-          }
+          //for (typename M::FaceFaceIter ff_it3=mesh.ff_iter(ff_it2.handle()); ff_it3; ++ff_it3)
+          //{
+            //addToFuzzyRegion(ff_it3.handle().idx());
+          //}
           addToFuzzyRegion(ff_it2.handle().idx());
         }
         addToFuzzyRegion(ff_it1.handle().idx());
@@ -1212,6 +1205,27 @@ QtModelT<M>::autoSelect()
   showFuzzy = true;
   toggleFuzzy();
   graphCut();
+}
+
+template <typename M>
+void
+QtModelT<M>::flipRegions()
+{
+  std::unordered_set<int> temp = sourceRegion;
+  sourceRegion = sinkRegion;
+  sinkRegion = temp;
+
+  for ( auto it = sourceRegion.begin(); it != sourceRegion.end(); ++it )
+  {
+    typename M::FaceHandle fh = mesh.face_handle(*it); 
+    mesh.set_color(fh, typename M::Color(0, 0, 255));
+  }
+  for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
+  {
+    typename M::FaceHandle fh = mesh.face_handle(*it); 
+    mesh.set_color(fh, typename M::Color(255, 0, 0));
+  }
+
 }
 
 #endif

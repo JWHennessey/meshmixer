@@ -121,23 +121,25 @@ SceneT<M>::SceneT()
   controls->layout()->addWidget(clearFacesButton);
   clearFacesButton->setHidden(true);
 
-  cutButton = new QPushButton(tr("Cut"));
+  cutButton = new QPushButton(tr("Cut Sink (Red)"));
   controls->layout()->addWidget(cutButton);
   cutButton->setHidden(true);
 
-  copyButton = new QPushButton(tr("Copy"));
+  copyButton = new QPushButton(tr("Copy Sink (Red)"));
   controls->layout()->addWidget(copyButton);
   copyButton->setHidden(true);
 
+  deleteButton = new QPushButton(tr("Delete Sink (Red)"));
+  controls->layout()->addWidget(deleteButton);
+  deleteButton->setHidden(true);
 
   pasteButton = new QPushButton(tr("Paste"));
   controls->layout()->addWidget(pasteButton);
   pasteButton->setHidden(true);
 
-  deleteButton = new QPushButton(tr("Delete"));
-  controls->layout()->addWidget(deleteButton);
-  deleteButton->setHidden(true);
-
+  flipRegionsButton = new QPushButton(tr("Switch Source / Sink"));
+  controls->layout()->addWidget(flipRegionsButton);
+  flipRegionsButton->setHidden(true);
 
   geoTreeSpinBox = new QSpinBox();
   geoTreeSpinBox->setMinimum(1);
@@ -751,6 +753,7 @@ SceneT<M>::loadMesh(const QString filePath)
           geoTreeSpinBox->setHidden(false);
           toggleFuzzyButton->setHidden(false);
           autoSelectButton->setHidden(false);
+          flipRegionsButton->setHidden(false);
           break;
         case 2:
           radio3->setHidden(false);
@@ -1250,6 +1253,7 @@ SceneT<M>::removeMesh()
     geoTreeSpinBox->setHidden(true);
     toggleFuzzyButton->setHidden(true);
     autoSelectButton->setHidden(true);
+    flipRegionsButton->setHidden(true);
   }
   else
   {
@@ -1276,6 +1280,7 @@ SceneT<M>::removeMesh()
       toggleFuzzyButton->setHidden(true);
       modelCount = 0;
       autoSelectButton->setHidden(true);
+      flipRegionsButton->setHidden(true);
     }
   }
 
@@ -1423,6 +1428,18 @@ SceneT<M>::toggleFuzzy()
     models[radioId-2]->toggleFuzzy();
   }
 
+}
+
+
+template <typename M>
+void
+SceneT<M>::flipRegions()
+{
+  std::cout << "Flip Regions" << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId != 1 && models[radioId-2] != NULL){
+    models[radioId-2]->flipRegions();
+  }
 }
 
 #endif

@@ -30,6 +30,7 @@ public:
       connect(geoTreeButton, SIGNAL(clicked()), this, SLOT(geoTreeSlot()));
       connect(autoSelectButton, SIGNAL(clicked()), this, SLOT(autoSelectSlot()));
       connect(toggleFuzzyButton, SIGNAL(clicked()), this, SLOT(toggleFuzzySlot()));
+      connect(flipRegionsButton, SIGNAL(clicked()), this, SLOT(flipRegionsSlot()));
     }
 public slots:
     void selectMesh()
@@ -65,6 +66,8 @@ public slots:
     void toggleFuzzySlot(){
       toggleFuzzy();
     }
-
+    void flipRegionsSlot(){
+      flipRegions();
+    }
 };
 #endif

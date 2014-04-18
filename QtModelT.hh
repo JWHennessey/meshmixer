@@ -64,6 +64,7 @@ public:
     QVector3D meshRotation;
     void toggleFuzzy();
     void autoSelect();
+    void flipRegions();
 
 private:
     bool facesConnected(int f1, int f2);

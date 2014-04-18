@@ -7,10 +7,14 @@ struct MyTraits : public OpenMesh::DefaultTraits
 {
   typedef OpenMesh::Vec3f Color;
   VertexAttributes( OpenMesh::Attributes::Normal |
-                    OpenMesh::Attributes::Color );
+                    OpenMesh::Attributes::Color  |
+                    OpenMesh::Attributes::Status   );
 
-  FaceAttributes( OpenMesh::Attributes::Normal |
-                    OpenMesh::Attributes::Color );
+  FaceAttributes( OpenMesh::Attributes::Normal  |
+                  OpenMesh::Attributes::Color |  
+                  OpenMesh::Attributes::Status );
+
+  EdgeAttributes(OpenMesh::Attributes::Status);
 
   VertexTraits
   {

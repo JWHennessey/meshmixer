@@ -46,6 +46,7 @@ protected:
     QWidget *deleteButton;
     QWidget *pasteButton;
     QWidget *copyButton;
+    QWidget *flipRegionsButton;
     QWidget *geoTreeButton;
     QSpinBox *geoTreeSpinBox;
     void wheelEvent(QGraphicsSceneWheelEvent * wheelEvent);
@@ -70,6 +71,7 @@ protected:
     int getClickedMeshIndex(QGraphicsSceneMouseEvent *event);
     void toggleFuzzy();
     void autoSelect();
+    void flipRegions();
 
 private:
     int modelCount;
