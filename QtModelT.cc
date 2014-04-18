@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "maxflow/graph.h"
-
+//#include <omp.h>
 
 template <typename M>
 QtModelT<M>::QtModelT(M& m)
@@ -96,8 +96,6 @@ QtModelT<M>::QtModelT(M& m)
     min = min_z;
   }
 
-
-  
   // set center and radius
   center = (bbMin+bbMax)*0.5;
   //horizontal = -center[0];
@@ -988,6 +986,7 @@ QtModelT<M>::graphCut()
     mapping[index++] = *it;
   }
   std::cout << "Mapping Created" << "\n";
+  //#pragma omp parallel for
   for(int i = 0; i<fuzzyRegion.size(); i++)
   {
     std::cout << "t-weight" << "\n";
