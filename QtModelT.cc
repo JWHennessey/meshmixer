@@ -821,6 +821,8 @@ QtModelT<M>::cut()
   createSourceAndSink();
   graphCut();
   fuzzyRegion.clear();
+  sourceRegion.clear();
+  sinkRegion.clear();
 }
 
 template<typename M>
@@ -925,11 +927,14 @@ QtModelT<M>::createSourceAndSink()
   {
     std::cout << "Not unique sink" << "\n";
 
-    int f = rand() % mesh.n_faces();
-    if(!inRegion(f))
+    for(int f = 0; f < mesh.n_faces(); f++)
     {
-      regionGrow(f, &sinkRegion, 1);
-      notUnique = false;
+      std::cout << f << "\n";
+      if(!inRegion(f))
+      {
+        regionGrow(f, &sinkRegion, 1);
+        notUnique = false;
+      }
     }
   }
   assignedFaces = fuzzyRegion.size() + sinkRegion.size() + sourceRegion.size();
@@ -1000,21 +1005,7 @@ QtModelT<M>::graphCut()
   std::cout << "Graph Cut" << "\n";
   typedef Graph<M, double,double,double> GraphType;
 
-  // !!! Exemplo da página 659 do Cormen !!!
-/*
-		        SOURCE
-		       /       \
-		     1/         \2
-		     /      3    \
-		   node0 -----> node1
-		     |   <-----   |
-		     |      4     |
-		     \            /
-		     5\          /6
-		       \        /
-		          SINK
 
- */
   //estimated nunber of nodes and estimated number of edges
   GraphType *g = new GraphType(fuzzyRegion.size(), fuzzyRegion.size()*4);
 
@@ -1150,8 +1141,9 @@ QtModelT<M>::faceDist(int fId1, int fId2)
   //Normal Difference
   Vec n1 = Vec(mesh.normal(fh1)[0], mesh.normal(fh1)[1], mesh.normal(fh1)[2]);
   Vec n2 = Vec(mesh.normal(fh2)[0], mesh.normal(fh2)[1], mesh.normal(fh2)[2]);
-  dist += (n1.dot(n2) * 0.1);
+  dist += (n1.dot(n2) * 0.5);
   std::cout << "Face Dist " << dist << "\n";
+  if(dist < 0.0) dist = 0.001;
   return dist;
 }
 
