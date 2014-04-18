@@ -289,7 +289,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
   std::vector<size_t> m1SnapRegion = computeSnapRegion(m1, snapSize);
   std::vector<size_t> m2SnapRegion = computeSnapRegion(m2, snapSize);
   std::cout << snapSize << " " << sizeM1 << sizeM2 << " snap\n";
-
+  
   //OpenMesh::VPropHandleT< double > gauss;
   int iterations = 1;
   int iterCount = 0;
@@ -297,19 +297,19 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
   while (iterCount < iterations){
     float scaling[vcount];
     std::vector< Matrix<double, 3, 3> > rotations;
+    std::vector<Matrix<double, 1, 3> > translations;
     rotations.reserve(m1->mesh.n_vertices());
-    Matrix<double, Dynamic, 3> translations(vcount,3);
-    
+    translations.reserve(vcount);
     //Find correspondence φ of SA to SB
     std::vector<size_t> correspondVector = findCorrespondence(m1,m2,m1SnapRegion,m2SnapRegion);
     int elasticity = 1;
     my_kd_tree_t b_mat_index(3, m1->boundaryMatrix, 10);
     b_mat_index.index->buildIndex();
     PointMatrix m1Matrix = m1->buildMatrix();
-
+    
     //For each point pi in MA Find the local neighborhood N(pi) Calculate the transformation Ti based on φ|N(pi)
     for (size_t vi = 0; vi < vcount; vi++){
-
+      
       std::vector<double> query_pt(3);
       query_pt[0] =  m1Matrix(vi,0);
       query_pt[1] =  m1Matrix(vi,1);
@@ -343,7 +343,12 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       std::sort(m1SnapRegion.begin(), m1SnapRegion.end());
       std::set_intersection(neighbours.begin(),neighbours.end(),m1SnapRegion.begin(),m1SnapRegion.end(),std::back_inserter(intersection));
       std::cout << intersection.size() << " " << neighbours.size() << " " << m1SnapRegion.size() << " inter\n";
-
+      if (intersection.size() == 0){
+        for (int vx = 0; vx < neighbours.size(); vx++){
+          m1->colourFaceFromVertexIndex(neighbours[vx],Point(0,0,127));
+        }
+        break;
+      }
       //bounding boxes
       Vec3f lbbMin, lbbMax, cbbMin, cbbMax;
       //lbbMin = lbbMax = OpenMesh::vector_cast<Vec3f>(m1->mesh.point(m1->mesh.vertex_handle(intersection[0])));
@@ -355,6 +360,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
         for (size_t j = 0; j < intersection.size(); j++){
           if (m1SnapRegion[i] == intersection[j]){
             VertexHandle vh = m1->mesh.vertex_handle(intersection[j]);
+            m1->colourFaceFromVertexIndex(intersection[j],Point(10+i,i,i));
             Point p = m1->mesh.point(vh);
             lbbMin.minimize( OpenMesh::vector_cast<Vec3f>(p));
             lbbMax.maximize( OpenMesh::vector_cast<Vec3f>(p));
@@ -362,7 +368,8 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
             localMatrix(x,1) = p[1];
             localMatrix(x,2) = p[2];
             
-            VertexHandle c_vh = m2->mesh.vertex_handle(correspondVector[i]);
+            VertexHandle c_vh = m2->mesh.vertex_handle(m2SnapRegion[correspondVector[i]]);
+            m2->colourFaceFromVertexIndex(m2SnapRegion[correspondVector[i]],Point(10+i,i,i));
             Point q = m2->mesh.point(c_vh);
             cbbMin.minimize( OpenMesh::vector_cast<Vec3f>(q));
             cbbMax.maximize( OpenMesh::vector_cast<Vec3f>(q));
@@ -379,12 +386,12 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       float scale = (lbbMax - lbbMin).length() / (cbbMax - cbbMax).length();
       Matrix<double, 1, 3> localMean = localMatrix.colwise().mean();
       Matrix<double, 1, 3> coreMean = correspondMatrix.colwise().mean();
-
-      PointMatrix qHat(correspondMatrix.rows(), 3);
-      PointMatrix pHat(localMatrix.rows(), 3);
       
-      calcBaryCenteredPoints(qHat, correspondMatrix);
-      calcBaryCenteredPoints(pHat, localMatrix);
+      PointMatrix qHat(localMatrix.rows(), 3);
+      PointMatrix pHat(correspondMatrix.rows(), 3);
+      
+      calcBaryCenteredPoints(qHat, localMatrix);
+      calcBaryCenteredPoints(pHat, correspondMatrix);
       
       Matrix<double, 3, 3> A(3,3);
       generateAMatrix(A, pHat, qHat);
@@ -392,27 +399,44 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       JacobiSVD< MatrixXd > svd(A, ComputeThinU | ComputeThinV);
       
       Matrix<double, 3, 3> R = svd.matrixU() * svd.matrixV().transpose();
-      Matrix<double, 1, 3> temp1 = (R * localMean.transpose());
-      Matrix<double, 1, 3> temp2 = coreMean;
+      Matrix<double, 1, 3> temp1 = (R * coreMean.transpose());
+      Matrix<double, 1, 3> temp2 = localMean;
       Matrix<double, 1, 3> t = temp1 - temp2;
-      
-      float li = iterCount+1/iterations;
-      int it = 0;
-      for (typename M::VertexIter v_it=m1->mesh.vertices_begin(); v_it!=m1->mesh.vertices_end(); ++v_it)
-      {
-        Matrix<double, 3, 3> R = rotations[it];
-        float S = scaling[it];
-        Matrix<double, 1, 3> T = translations.row(it);
-        R = R * li;
-        S = S * li;
-        T = T * li;
-        //scaling
-        Point vertex = m1->mesh.point(*v_it);
-        Eigen::Vector3d p = Eigen::Vector3d(vertex[0], vertex[1], vertex[2]);
-        p = R * p;
-        m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) - Point(T[0], T[1], T[2]));
-        it++;
+      if (isnan(R(0,0) + R(1,1) + R(2,2)) || isinf(t.norm()) ) {
+        std::cout << "threw error " << "\n\n";
+        std::cout << "Sum of diagonal of R " << (R(0,0) + R(1,1) + R(2,2)) << "\n";
+        std::cout << "Norm of t " << t.norm() << "\n\n";
+      } else {
+        std::cout << "Sum of diagonal of R " << (R(0,0) + R(1,1) + R(2,2)) << "\n";
+        std::cout << "Norm of t " << t.norm() << "\n\n";
       }
+      rotations.push_back(R);
+      translations.push_back(t);
+      /*
+       Matrix<double, 3, 3> R = svd.matrixU() * svd.matrixV().transpose();
+       Matrix<double, 1, 3> temp1 = (R * p.colwise().mean().transpose());
+       Matrix<double, 1, 3> temp2 = q.colwise().mean();
+       Matrix<double, 1, 3> t = temp1 - temp2;*/
+    }
+    
+    float li = iterCount+1/iterations;
+    int it = 0;
+    for (typename M::VertexIter v_it=m1->mesh.vertices_begin(); v_it!=m1->mesh.vertices_end(); ++v_it)
+    {
+      Matrix<double, 3, 3> R = rotations[it];
+      float S = scaling[it];
+      Matrix<double, 1, 3> T = translations[it];
+      
+      //R = R * li;
+      //S = S * li;
+      //T = T * li;
+      //scaling
+      Point vertex = m1->mesh.point(*v_it);
+      Eigen::Vector3d p = Eigen::Vector3d(vertex[0], vertex[1], vertex[2]);
+      p = R * p;
+      m1->mesh.set_point( *v_it, vertex - Point(T(0,0),T(0,1),T(0,2)));
+      m1->mesh.set_point( *v_it, vertex - Point(T(0,0),T(0,1),T(0,2)));
+      it++;
     }
     std::cout << "Iteration " << iterCount << "\n";
     iterCount++;
@@ -567,7 +591,7 @@ SceneT<M>::computeSnapRegion(QtModelT<M>* m1, float snapMax)
     size_t count = mat_index.index->radiusSearch(&query_pt[0], snapMax, resultPairs, nanoflann::SearchParams(true));
     snapRegion.reserve(count);
     for (size_t j = 0; j < count; j++){
-      m1->colourFaceFromVertexIndex(resultPairs[j].first);
+      //m1->colourFaceFromVertexIndex(resultPairs[j].first);
       snapRegion.push_back(resultPairs[j].first);
     }
   }
@@ -1003,7 +1027,11 @@ SceneT<M>::keyPressEvent( QKeyEvent* event)
         models[radioId-2]->updateHorizontal(-TANSLATE_SPEED);
         break;
       case Key_S:
-        if (models[0] != NULL && models[1] != NULL) softICP(models[0], models[1]);
+        if (models[0] != NULL && models[1] != NULL){
+          if (models[0]->mesh.n_vertices() < models[1]->mesh.n_vertices())
+          softICP(models[0], models[1]);
+          else softICP(models[1], models[0]);
+        }
     }
   }
   event->accept();
