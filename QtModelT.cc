@@ -158,7 +158,7 @@ QtModelT<M>::findBoundaryVertices(){
   {
     if (mesh.is_boundary(*v_it)) {
       boundaryPoints.push_back(*v_it);
-      colourFaceFromVertexIndex(i);
+      colourFaceFromVertexIndex(i,Point(255,0,255));
     }
     i++;
   }
@@ -206,11 +206,11 @@ QtModelT<M>::addToStroke(int f){
 
 template <typename M>
 void
-QtModelT<M>::colourFaceFromVertexIndex(int vertexNumber){
+QtModelT<M>::colourFaceFromVertexIndex(int vertexNumber, Point col){
   typename M::VertexHandle point = mesh.vertex_handle(vertexNumber);
   for (typename M::VertexFaceIter vf_it=mesh.vf_begin(point); vf_it!=mesh.vf_end(point); ++vf_it)
   {
-    mesh.set_color(*vf_it, typename M::Color(255, 0, 255));
+    mesh.set_color(*vf_it, typename M::Color(col[0],col[1],col[2]));
   }
 }
 
@@ -333,9 +333,9 @@ QtModelT<M>::render()
     glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
     //glPopMatrix();
     glPushMatrix();
-    glLoadIdentity();
+    //glLoadIdentity();
     glTranslatef(horizontal, vertical, zAxis);
-    glMultMatrixf(matrix);
+    //glMultMatrixf(matrix);
   
   //glEnable(GL_LIGHTING);
   //glShadeModel(GL_FLAT);

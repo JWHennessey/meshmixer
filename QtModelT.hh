@@ -58,7 +58,7 @@ public:
     void nearestNeighbours(double radius, MapTable* resultTable);
     void scale(float alpha);
     void clearColour();
-    void colourFaceFromVertexIndex(int vertexNumber);
+    void colourFaceFromVertexIndex(int vertexNumber, Point col);
     void createGeoTree(int k);
     std::vector<int> getStroke();
     void deleteSink();
