@@ -260,6 +260,34 @@ QtModelT<M>::select(int faceNumber){
 
 
 template <typename M>
+void
+QtModelT<M>::addSink(int faceNumber){
+  if(inRegion(faceNumber)) sourceRegion.erase(faceNumber);
+
+  sinkRegion.insert(faceNumber);
+  typename M::FaceHandle fh = mesh.face_handle(faceNumber);
+  mesh.set_color(fh, typename M::Color(255, 0, 0));
+
+}
+
+template <typename M>
+void
+QtModelT<M>::addSource(int faceNumber){
+  if(inRegion(faceNumber)) sinkRegion.erase(faceNumber);
+
+  sourceRegion.insert(faceNumber);
+  typename M::FaceHandle fh = mesh.face_handle(faceNumber);
+  mesh.set_color(fh, typename M::Color(0, 0, 255));
+
+}
+
+//template <typename M>
+//void
+//QtModelT<M>::removeFromRegion(int faceNumber){
+
+//}
+
+template <typename M>
 bool
 QtModelT<M>::facesConnected(int f1, int f2){
   //typename M::FaceHandle fh1 = mesh.face_handle(f1);
@@ -734,12 +762,23 @@ QtModelT<M>::createGeoTree(int k)
 }
 
 template<typename M>
-void
+M
 QtModelT<M>::cut()
 {
   std::cout << "Cut" << "\n";
+  M m;
+  for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
+  {
+    typename M::FaceHandle fh = mesh.face_handle(*it);
+    std::vector<typename M::VertexHandle>  face_vhandles;
+    for (typename M::FaceVertexIter vf_it=mesh.fv_iter(fh); vf_it; ++vf_it)
+    {
+      face_vhandles.push_back(m.add_vertex(mesh.point(*vf_it)));
+    }
+    m.add_face(face_vhandles);
+  }
   deleteSink();
-}
+  return m;}
 
 template<typename M>
 double
@@ -1221,11 +1260,30 @@ QtModelT<M>::flipRegions()
     mesh.set_color(fh, typename M::Color(0, 0, 255));
   }
   for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
-  {
+ {
     typename M::FaceHandle fh = mesh.face_handle(*it); 
     mesh.set_color(fh, typename M::Color(255, 0, 0));
   }
 
+}
+
+template <typename M>
+M
+QtModelT<M>::copy()
+{
+  std::cout << "Copy" << "\n";
+  M m;
+  for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
+  {
+    typename M::FaceHandle fh = mesh.face_handle(*it);
+    std::vector<typename M::VertexHandle>  face_vhandles;
+    for (typename M::FaceVertexIter vf_it=mesh.fv_iter(fh); vf_it; ++vf_it)
+    {
+      face_vhandles.push_back(m.add_vertex(mesh.point(*vf_it)));
+    }
+    m.add_face(face_vhandles);
+  }
+  return m;
 }
 
 #endif

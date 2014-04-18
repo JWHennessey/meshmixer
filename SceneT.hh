@@ -72,6 +72,7 @@ protected:
     void toggleFuzzy();
     void autoSelect();
     void flipRegions();
+    void addMesh(MyMesh m_mymesh);
 
 private:
     int modelCount;
@@ -115,9 +116,12 @@ private:
     QGroupBox* mouseControlBox;
     QRadioButton* translateRadio;
     QRadioButton* rotateRadio;
-    QRadioButton* paintFacesRadio;
+    QRadioButton* paintStrokeRadio;
+    QRadioButton* paintSinkRadio;
+    QRadioButton* paintSourceRadio;
     void paintFaces(QGraphicsSceneMouseEvent *event);
     bool inPaintingMode;
+    bool inRotatingMode;
     void moveMeshInOneAxis(QGraphicsSceneMouseEvent *event);
   //void softICP(QtModelT<M>* m1, QtModelT<M>* m2);
     std::vector<size_t> computeSnapRegion(QtModelT<M>* m1, float snapMax);

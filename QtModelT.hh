@@ -41,6 +41,8 @@ public:
     ~QtModelT();
     void render();
     void select(int faceNumber);
+    void addSink(int faceNumber);
+    void addSource(int faceNumber);
     void updateColour();
     void updateRotation(QVector3D& rotationVec);
     void updateHorizontal(float x);
@@ -59,12 +61,13 @@ public:
     void colourFaceFromVertexIndex(int vertexNumber);
     void createGeoTree(int k);
     std::vector<int> getStroke();
-    void cut();
     void deleteSink();
     QVector3D meshRotation;
     void toggleFuzzy();
     void autoSelect();
     void flipRegions();
+    M cut();
+    M copy();
 
 private:
     bool facesConnected(int f1, int f2);

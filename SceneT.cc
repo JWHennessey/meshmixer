@@ -38,6 +38,7 @@ SceneT<M>::SceneT()
 , deg2Rad(0.0174532925)
 , inPaintingMode(false)
 , mouseClicked(false)
+, inRotatingMode(false)
 {
   modelCount = 0;
   QWidget *controls = createDialog(tr("Controls"));
@@ -94,13 +95,17 @@ SceneT<M>::SceneT()
   mouseControlBox = new QGroupBox(tr("Mouse Control"));
   mouseControlBox->setHidden(true);
   translateRadio = new QRadioButton(tr("Translate"));
-  rotateRadio = new QRadioButton(tr("Rotate"));
-  paintFacesRadio = new QRadioButton(tr("Paint Faces (with Alt)"));
+  rotateRadio = new QRadioButton(tr("Rotate (or Alt with paint)"));
+  paintStrokeRadio = new QRadioButton(tr("Paint Stroke Faces"));
+  paintSinkRadio = new QRadioButton(tr("Paint Sink (red) Faces"));
+  paintSourceRadio = new QRadioButton(tr("Paint Source (blue) Faces"));
   translateRadio->setChecked(true);
   QVBoxLayout *vb = new QVBoxLayout;
   vb->addWidget(translateRadio);
   vb->addWidget(rotateRadio);
-  vb->addWidget(paintFacesRadio);
+  vb->addWidget(paintStrokeRadio);
+  vb->addWidget(paintSinkRadio);
+  vb->addWidget(paintSourceRadio);
   vb->addStretch(1);
   mouseControlBox->setLayout(vb);
   controls->layout()->addWidget(mouseControlBox);
@@ -729,6 +734,27 @@ SceneT<M>::loadMesh(const QString filePath)
   QApplication::setOverrideCursor(Qt::BusyCursor);
   if(OpenMesh::IO::read_mesh(m_mymesh, filePath.toStdString(), _options))
   {
+    addMesh(m_mymesh);
+
+    //std::clog << m_mymesh.n_vertices() << " vertices, "
+    //<< m_mymesh.n_edges()    << " edge, "
+    //<< m_mymesh.n_faces()    << " faces\n";
+  }
+  else
+  {
+    std::cout << "Error Loading Mesh" << "\n";
+  }
+  m_modelButton->setEnabled(true);
+  QApplication::restoreOverrideCursor();
+
+}
+
+template <typename M>
+void
+SceneT<M>::addMesh(MyMesh m_mymesh)
+{
+  if(m_mymesh.n_vertices() > 0)
+  {
     if(modelCount > 9)
     {
       std::cout << "Too Many Models. Please Remove All Models" << "\n";
@@ -785,20 +811,8 @@ SceneT<M>::loadMesh(const QString filePath)
       }
     }
     clickRadioButton(modelCount+1);
-
-    //std::clog << m_mymesh.n_vertices() << " vertices, "
-    //<< m_mymesh.n_edges()    << " edge, "
-    //<< m_mymesh.n_faces()    << " faces\n";
   }
-  else
-  {
-    std::cout << "Error Loading Mesh" << "\n";
-  }
-  m_modelButton->setEnabled(true);
-  QApplication::restoreOverrideCursor();
-
 }
-
 
 template <typename M>
 void
@@ -826,7 +840,7 @@ template <typename M>
 void
 SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-  QGraphicsScene::mouseMoveEvent(event);
+ QGraphicsScene::mouseMoveEvent(event);
  if(inPaintingMode && mouseClicked) paintFaces(event); 
   
   if (event->isAccepted())
@@ -838,7 +852,7 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     if (radioId == 0){
       
     }
-    if(mouseRadioSelected() == 1)
+    if(mouseRadioSelected() == 1 )
     {
       if(radioId  == 1){
         //std::cout << m_distance << "\n";
@@ -861,7 +875,7 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
       }
     }
-    if(mouseRadioSelected() == 2)
+    if(mouseRadioSelected() == 2 || inRotatingMode)
     {
       
       if(radioId  == 1){
@@ -888,11 +902,14 @@ template <typename M>
 void
 SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-  //int selected = whichRadioButton() - 2;
-  //if(modelCount > 0 && event->button() == LeftButton && selected >= 0 && mouseRadioSelected() == 3){
-    //paintFaces(event);
-    //inPaintingMode = true;
-  //}else {
+  int selected = whichRadioButton() - 2;
+  if(modelCount > 0 && event->button() == LeftButton && selected >= 0 && 
+      (mouseRadioSelected() == 3 || mouseRadioSelected() == 4 || mouseRadioSelected() == 5 ) && 
+       !inRotatingMode){
+    paintFaces(event);
+    inPaintingMode = true;
+  }
+  //else {
 
   mouseClicked = true;
 
@@ -915,8 +932,7 @@ template <typename M>
 void
 SceneT<M>::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-
-  mouseClicked = false;
+  inPaintingMode = false;
   QGraphicsScene::mouseReleaseEvent(event);
   if (event->isAccepted())
     return;
@@ -929,7 +945,15 @@ template <typename M>
 void
 SceneT<M>::keyReleaseEvent( QKeyEvent* event)
 {
-  inPaintingMode = false;
+  switch(event->key())
+  {
+    case Key_Alt:
+      if((mouseRadioSelected() == 3 || mouseRadioSelected() == 4 || mouseRadioSelected() == 5 ))
+        inPaintingMode = true;
+      inRotatingMode = false;
+      break;
+  }
+inPaintingMode = false;
 }
 
 template <typename M>
@@ -960,8 +984,11 @@ SceneT<M>::keyPressEvent( QKeyEvent* event)
     switch(event->key())
     {
       case Key_Alt:
-        if(mouseRadioSelected() == 3)
-          inPaintingMode = true;
+        if((mouseRadioSelected() == 3 || mouseRadioSelected() == 4 || mouseRadioSelected() == 5 ))
+        {  
+          inPaintingMode = false;
+          inRotatingMode = true;
+        } 
         break;
       case Key_Up:
         models[radioId-2]->updateVertical(-TANSLATE_SPEED);
@@ -1096,7 +1123,10 @@ SceneT<M>::paintFaces(QGraphicsSceneMouseEvent *event)
           }
         }
       }
-      models[selected]->select(item);
+      if (mouseRadioSelected() == 3) models[selected]->select(item);
+      else if (mouseRadioSelected() == 4) models[selected]->addSink(item);
+      else if (mouseRadioSelected() == 5) models[selected]->addSource(item);
+
     }
 }
 
@@ -1337,8 +1367,12 @@ SceneT<M>::mouseRadioSelected()
     return 1;
   else if(rotateRadio->isChecked())
     return 2;
-  else if(paintFacesRadio->isChecked())
+  else if(paintStrokeRadio->isChecked())
     return 3;
+  else if(paintSinkRadio->isChecked())
+    return 4;
+   else if(paintSourceRadio->isChecked())
+    return 5;
   else
     return 0;
 }
@@ -1352,7 +1386,9 @@ SceneT<M>::cut()
   const int radioId = whichRadioButton();
   if(radioId != 1)
   {
-    models[radioId-2]->cut();
+    MyMesh m = models[radioId-2]->cut();
+    addMesh(m);
+    //
   }
 }
 
@@ -1368,6 +1404,12 @@ void
 SceneT<M>::copy()
 {
   std::cout << "Copy Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  if(radioId != 1 && models[radioId-2] != NULL){
+    MyMesh m = models[radioId-2]->copy();
+    addMesh(m);
+  }
+
 }
 
 template <typename M>
