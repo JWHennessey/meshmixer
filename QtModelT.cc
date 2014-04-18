@@ -778,7 +778,23 @@ QtModelT<M>::cut()
     m.add_face(face_vhandles);
   }
   deleteSink();
-  return m;}
+  typedef typename M::Point Point;
+  QVector3D tempR = meshRotation * deg2Rad;
+  Eigen::AngleAxis<float> aax(tempR.x(), Eigen::Vector3f(1, 0, 0));
+  Eigen::AngleAxis<float> aay(tempR.y(), Eigen::Vector3f(0, 1, 0));
+  Eigen::AngleAxis<float> aaz(tempR.z(), Eigen::Vector3f(0, 0, 1));
+  Eigen::Quaternion<float> rotation = aax * aay * aaz;
+
+  for (typename M::VertexIter v_it=m.vertices_begin(); v_it!=m.vertices_end(); ++v_it) 
+  {
+    Eigen::Vector3f p = Eigen::Vector3f(m.point(*v_it)[0], m.point(*v_it)[1], m.point(*v_it)[2]);
+    p = rotation * p;
+    m.set_point( *v_it, Point(p[0], p[1], p[2]) );
+    m.set_point( *v_it, m.point(*v_it) + Point(horizontal, vertical, depth) );
+  }
+  
+  return m;
+}
 
 template<typename M>
 double
@@ -1282,6 +1298,20 @@ QtModelT<M>::copy()
       face_vhandles.push_back(m.add_vertex(mesh.point(*vf_it)));
     }
     m.add_face(face_vhandles);
+  }
+  typedef typename M::Point Point;
+  QVector3D tempR = meshRotation * deg2Rad;
+  Eigen::AngleAxis<float> aax(tempR.x(), Eigen::Vector3f(1, 0, 0));
+  Eigen::AngleAxis<float> aay(tempR.y(), Eigen::Vector3f(0, 1, 0));
+  Eigen::AngleAxis<float> aaz(tempR.z(), Eigen::Vector3f(0, 0, 1));
+  Eigen::Quaternion<float> rotation = aax * aay * aaz;
+
+  for (typename M::VertexIter v_it=m.vertices_begin(); v_it!=m.vertices_end(); ++v_it) 
+  {
+    Eigen::Vector3f p = Eigen::Vector3f(m.point(*v_it)[0], m.point(*v_it)[1], m.point(*v_it)[2]);
+    p = rotation * p;
+    m.set_point( *v_it, Point(p[0], p[1], p[2]) );
+    m.set_point( *v_it, m.point(*v_it) + Point(horizontal, vertical, depth) );
   }
   return m;
 }
