@@ -114,7 +114,7 @@ SceneT<M>::SceneT()
   controls->layout()->addWidget(removeModelButton);
   removeModelButton->setHidden(true);
 
-  autoSelectButton = new QPushButton(tr("Auto Select"));
+  autoSelectButton = new QPushButton(tr("Segment From Stroke"));
   controls->layout()->addWidget(autoSelectButton);
   autoSelectButton->setHidden(true);
 
@@ -1458,6 +1458,9 @@ SceneT<M>::paste()
   int otherMesh = pasteSpinBox->value() - 1;
   if(radioId != 1 && models[radioId-2] != NULL && models[otherMesh] != NULL && otherMesh != (radioId-2) ){
     softICP(models[radioId-2], models[otherMesh]);
+  }
+  else{
+    std::cout << "Bad pair selected for paste" << "\n";
   }
 
 }
