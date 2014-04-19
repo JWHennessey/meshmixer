@@ -1204,6 +1204,9 @@ template<typename M>
 void
 QtModelT<M>::autoSelect()
 {
+  
+  if(sourceRegion.size() != 0 && sinkRegion.size()!=0)
+  {
   std::cout << "Auto Select" << "\n";
   dest = -1;
   prev.clear();
@@ -1303,6 +1306,7 @@ QtModelT<M>::autoSelect()
     stroke.clear();
     clearColour();
     std::cout << "Bad Path Selected" << "\n"; 
+  }
   }
 }
 
