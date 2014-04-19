@@ -1153,14 +1153,14 @@ template<typename M>
 void
 QtModelT<M>::deleteSink()
 {
-  //mesh.garbage_collection();
-  //for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
-  //{
-    //typename M::FaceHandle fh = mesh.face_handle(*it);
-    //mesh.delete_face(fh, false);
-  //}
-  //mesh.garbage_collection();
-  cleanMesh();
+  mesh.garbage_collection();
+  for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
+  {
+    typename M::FaceHandle fh = mesh.face_handle(*it);
+    mesh.delete_face(fh, true);
+  }
+  mesh.garbage_collection();
+  //cleanMesh();
 }
 
 template<typename M>
