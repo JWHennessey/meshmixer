@@ -3,6 +3,7 @@
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 #include <eigen3/Eigen/Dense>
 
+
 struct MyTraits : public OpenMesh::DefaultTraits
 {
   typedef OpenMesh::Vec3f Color;
@@ -37,5 +38,6 @@ typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits>  MyMesh;
 typedef MyMesh::Point Point;
 typedef Eigen::MatrixX3d PointMatrix;
 typedef Eigen::Vector3d Vec;
+
 
 #endif

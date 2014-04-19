@@ -13,7 +13,7 @@
 #ifndef GL_MULTISAMPLE
 #define GL_MULTISAMPLE  0x809D
 #endif
-
+#include <math.h>
 
 template <typename M>
 QDialog

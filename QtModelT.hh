@@ -15,7 +15,7 @@
 #include "GeoTreeT.hh"
 #include <queue>
 #include <unordered_set>
-
+#include "maxflow/graph.h"
 //#include <flann/io/hdf5.h>
 
 using namespace Qt;
@@ -74,7 +74,7 @@ private:
     void addToStroke(int f);
     void addToFuzzyRegion(int f);
     QVector3D modelRotation;
-    
+    //void sourceSinkWeightThread(Graph<M, double,double,double>  *g, int  *mapping[150000000], const int start, const int end); 
     
     QColor modelColor;
     GLfloat vertical;
@@ -100,7 +100,7 @@ private:
     std::vector<int> prev;
     double normalDistance(int vertex);
     double inverseGeodesic(int vertex);
-    void createSourceAndSink();
+    bool createSourceAndSink();
     void graphCut();
     bool inRegion(int f);
     void regionGrow(int f, std::unordered_set<int>* region, int type);
@@ -113,6 +113,7 @@ private:
     std::vector<VertexHandle> findBoundaryRing(VertexHandle point);
     Vec3f center;
     bool showFuzzy;
+    //static int SIZE;
 };
 
 struct Dist

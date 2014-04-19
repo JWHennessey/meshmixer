@@ -873,7 +873,7 @@ QtModelT<M>::getFaceCentroid(typename M::FaceHandle fh)
 }
 
 template<typename M>
-void
+bool
 QtModelT<M>::createSourceAndSink()
 {
   sourceRegion.clear();
@@ -881,9 +881,20 @@ QtModelT<M>::createSourceAndSink()
   std::cout << "Source and Sink" << "\n";
   bool notUnique = true;
   int assignedFaces = fuzzyRegion.size();
+  bool completed = false;
   while(notUnique)
   {
     std::cout << "Not unique source" << "\n";
+    std::cout << "No Faces" << mesh.n_faces() << "\n";
+    //for(int f = 1; f < mesh.n_faces(); f++)
+    //{
+      //std::cout << f << "\n";
+      //if(!inRegion(f))
+      //{
+        //regionGrow(f, &sourceRegion, 0);
+        //notUnique = false;
+      //}
+    //}
     int f = rand() % mesh.n_faces();
     if(!inRegion(f))
     {
@@ -892,24 +903,32 @@ QtModelT<M>::createSourceAndSink()
     }
   }
   notUnique = true;
-  while(notUnique)
-  {
+  //while(notUnique)
+  //{
     std::cout << "Not unique sink" << "\n";
 
-    for(int f = 0; f < mesh.n_faces(); f++)
+    for(int f = 1; f < mesh.n_faces(); f++)
     {
-      std::cout << f << "\n";
+      //std::cout << f << "\n";
       if(!inRegion(f))
       {
         regionGrow(f, &sinkRegion, 1);
-        notUnique = false;
+        completed = true;
       }
     }
-  }
-  assignedFaces = fuzzyRegion.size() + sinkRegion.size() + sourceRegion.size();
+  //}
+  //assignedFaces = fuzzyRegion.size() + sinkRegion.size() + sourceRegion.size();
   //std::cout << "In Fuzzy Region " << fuzzyRegion.size() << " / " << mesh.n_faces() << "\n";
   //std::cout << "In Source Region " << sourceRegion.size() << " / " << mesh.n_faces() << "\n";
   //std::cout << "In Sink Region " << sinkRegion.size() << " / " << mesh.n_faces() << "\n";
+  return completed;
+  //if(completed){
+    //sinkRegion.clear();
+    //sourceRegion.clear();
+    //fuzzyRegion.clear();
+    //stroke.clear();
+    //std::cout << "Bad Path Selected" << "\n";
+  //}
 }
 
 template<typename M>
@@ -967,14 +986,25 @@ QtModelT<M>::inRegion(int f)
  return false;
 }
 
+//template<typename M>
+//void
+//QtModelT<M>::sourceSinkWeightThread(Graph<M, double,double,double> *g, int *mapping[std::size_t], const int start, const int end)
+//{
+  //for(int i = start; i<end; i++)
+  //{
+    //std::cout << "t-weight" << "\n";
+    //g->add_tweights(i, distToSource(mapping[i]), distToSink(mapping[i]) );
+  //}
+
+//}
+
 template<typename M>
 void
 QtModelT<M>::graphCut()
 {
   std::cout << "Graph Cut" << "\n";
+  
   typedef Graph<M, double,double,double> GraphType;
-
-
   //estimated nunber of nodes and estimated number of edges
   GraphType *g = new GraphType(fuzzyRegion.size(), fuzzyRegion.size()*4);
 
@@ -986,6 +1016,11 @@ QtModelT<M>::graphCut()
     mapping[index++] = *it;
   }
   std::cout << "Mapping Created" << "\n";
+  
+  //std::thread first(&QtModelT<M>::sourceSinkWeightThread(g, &mapping, 0, fuzzyRegion.size()), this);
+
+
+  //first.join();
   //#pragma omp parallel for
   for(int i = 0; i<fuzzyRegion.size(); i++)
   {
@@ -1255,10 +1290,20 @@ QtModelT<M>::autoSelect()
     to = prev[from];
     from = to;
   }
-  createSourceAndSink();
-  showFuzzy = true;
-  toggleFuzzy();
-  graphCut();
+  if(createSourceAndSink())
+  {
+    showFuzzy = true;
+    toggleFuzzy();
+    graphCut();
+  }
+  else{
+    sinkRegion.clear();
+    sourceRegion.clear();
+    fuzzyRegion.clear();
+    stroke.clear();
+    clearColour();
+    std::cout << "Bad Path Selected" << "\n"; 
+  }
 }
 
 template <typename M>

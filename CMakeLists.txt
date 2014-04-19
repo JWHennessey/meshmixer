@@ -1,12 +1,16 @@
 include (ACGCommon)
 
- #set(CMAKE_C_COMPILER "gcc")
- #set(CMAKE_CXX_COMPILER "gcc")
-
-#find_package(OpenMP)
-#if (OPENMP_FOUND)
-    #set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+#set(CMAKE_C_COMPILER "gcc")
+#set(CMAKE_CXX_COMPILER "gcc")
+#if(UNIX)
+    #ADD_DEFINITIONS("-std=c++0x") 
+#endif()#find_package(OpenMP)
+#if (OPENMP_FOUND
+    ##set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    ##set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    #message("OPEN MP FOUND")   
+#else()
+    #message("OPEN NOT MP FOUND")   
 #endif()
 
 include_directories (
