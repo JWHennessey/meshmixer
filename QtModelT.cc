@@ -773,18 +773,6 @@ QtModelT<M>::cut()
 {
   std::cout << "Cut" << "\n";
   M m;
-  //for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
-  //{
-    //typename M::FaceHandle fh = mesh.face_handle(*it);
-    //std::vector<typename M::VertexHandle>  face_vhandles;
-    //for (typename M::FaceVertexIter vf_it=mesh.fv_iter(fh); vf_it; ++vf_it)
-    //{
-      //face_vhandles.push_back(m.add_vertex(mesh.point(*vf_it)));
-    //}
-    //m.add_face(face_vhandles);
-  //}
- 
-
   std::unordered_map<int, typename M::VertexHandle> mymap;
 
   for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
