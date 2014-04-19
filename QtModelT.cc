@@ -202,7 +202,7 @@ QtModelT<M>::colourFaceFromVertexIndex(int vertexNumber, Point col){
   if(vh.is_valid())
   for (typename M::VertexFaceIter vf_it=mesh.vf_begin(vh); vf_it!=mesh.vf_end(vh); ++vf_it)
   {
-    if (vf_it->is_valid()){
+    if (vf_it.is_valid()){
     mesh.set_color(*vf_it, typename M::Color(col[0],col[1],col[2]));
     }
   }

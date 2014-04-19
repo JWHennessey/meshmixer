@@ -445,9 +445,9 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
     
     float li = iterCount+1/iterations;
     li =1;
+    int it = 0;
     for (typename M::VertexIter v_it=m1->mesh.vertices_begin(); v_it!=m1->mesh.vertices_end(); ++v_it)
     {
-      int it = v_it->idx();
       Matrix<double, 3, 3> R = rotations[it];
       double S = scaling[it];
       Matrix<double, 1, 3> T = translations[it];
@@ -464,7 +464,8 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       Eigen::Vector3d p = Eigen::Vector3d(vertex[0], vertex[1], vertex[2]);
       p = R * p;
       m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]));
-      m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) + Point(T(0,0),T(0,1),T(0,2)));
+      m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) - Point(T(0,0),T(0,1),T(0,2)));
+      it++;
     }
     std::cout << "Iteration " << iterCount << "\n";
     iterCount++;
