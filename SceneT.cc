@@ -1462,7 +1462,6 @@ SceneT<M>::paste()
   else{
     std::cout << "Bad pair selected for paste" << "\n";
   }
-
 }
 
 template <typename M>

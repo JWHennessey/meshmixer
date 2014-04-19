@@ -775,6 +775,7 @@ QtModelT<M>::cut()
     }
     m.add_face(face_vhandles);
   }
+  
   deleteSink();
   typedef typename M::Point Point;
   QVector3D tempR = meshRotation * deg2Rad;
@@ -790,7 +791,7 @@ QtModelT<M>::cut()
     m.set_point( *v_it, Point(p[0], p[1], p[2]) );
     m.set_point( *v_it, m.point(*v_it) + Point(horizontal, vertical, depth) );
   }
-  
+
   return m;
 }
 
@@ -1155,12 +1156,13 @@ template<typename M>
 void
 QtModelT<M>::deleteSink()
 {
-  for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
-  {
-    typename M::FaceHandle fh = mesh.face_handle(*it);
-    mesh.delete_face(fh, false);
-  }
-  mesh.garbage_collection();
+  //for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
+  //{
+    //typename M::FaceHandle fh = mesh.face_handle(*it);
+    //mesh.delete_face(fh, false);
+  //}
+  //mesh.garbage_collection();
+  cleanMesh();
 }
 
 template<typename M>
@@ -1360,10 +1362,32 @@ QtModelT<M>::copy()
     p = rotation * p;
     m.set_point( *v_it, Point(p[0], p[1], p[2]) );
     m.set_point( *v_it, m.point(*v_it) + Point(horizontal, vertical, depth) );
-  }
+  }  
+
   return m;
 }
 
+
+template<typename M>
+void
+QtModelT<M>::cleanMesh()
+{
+  std::cout << "Clean Mesh" << "\n";
+  M mNew;
+  for ( auto it = sourceRegion.begin(); it != sourceRegion.end(); ++it )
+  {
+    typename M::FaceHandle fh = mesh.face_handle(*it);
+    std::vector<typename M::VertexHandle>  face_vhandles;
+    for (typename M::FaceVertexIter vf_it=mesh.fv_iter(fh); vf_it; ++vf_it)
+    {
+      face_vhandles.push_back(mNew.add_vertex(mesh.point(*vf_it)));
+    }
+    mNew.add_face(face_vhandles);
+  }
+  mesh = mNew;
+  calcNormals();
+  clearColour();
+}
 
 template <typename M>
 void
