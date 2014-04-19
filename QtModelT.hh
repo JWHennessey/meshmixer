@@ -68,7 +68,7 @@ public:
     void flipRegions();
     M cut();
     M copy();
-
+    void exportMesh();
 private:
     bool facesConnected(int f1, int f2);
     void addToStroke(int f);

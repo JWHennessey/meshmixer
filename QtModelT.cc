@@ -1364,4 +1364,18 @@ QtModelT<M>::copy()
   return m;
 }
 
+
+template <typename M>
+void
+QtModelT<M>::exportMesh()
+{
+  if (!OpenMesh::IO::write_mesh(mesh, "export.obj")) 
+  {
+    std::cout << "Error exporting mesh" << "\n";
+  }
+  else
+  {
+    std::cout << "Exported to export.obj" << "\n";
+  }
+}
 #endif
