@@ -1454,6 +1454,12 @@ void
 SceneT<M>::paste()
 {
   std::cout << "Paste Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  int otherMesh = pasteSpinBox->value() - 1;
+  if(radioId != 1 && models[radioId-2] != NULL && models[otherMesh] != NULL && otherMesh != (radioId-2) ){
+    softICP(models[radioId-2], models[otherMesh]);
+  }
+
 }
 
 template <typename M>
