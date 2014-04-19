@@ -284,8 +284,8 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
   m2->applyTransformations();
   double sizeM1 = computeSnapRegionSize(m1,m2);
   double sizeM2 = computeSnapRegionSize(m2,m1);
-  double snapSize = sizeM1 < sizeM2 ? sizeM1 : sizeM2;
-  snapSize = 0.2;
+  double snapSize = sizeM1 > sizeM2 ? sizeM1 : sizeM2;
+  //snapSize = 0.2;
   std::vector<size_t> m1SnapRegion = computeSnapRegion(m1, snapSize);
   std::vector<size_t> m2SnapRegion = computeSnapRegion(m2, snapSize);
   std::cout << snapSize << " " << sizeM1 << sizeM2 << " snap\n";
@@ -295,7 +295,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
   int iterCount = 0;
   int vcount = m1->mesh.n_vertices();
   while (iterCount < iterations){
-    float scaling[vcount];
+    double scaling[vcount];
     std::vector< Matrix<double, 3, 3> > rotations;
     std::vector<Matrix<double, 1, 3> > translations;
     rotations.reserve(m1->mesh.n_vertices());
@@ -303,13 +303,12 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
     //Find correspondence φ of SA to SB
     std::vector<size_t> correspondVector = findCorrespondence(m1,m2,m1SnapRegion,m2SnapRegion);
     int elasticity = 1;
-    my_kd_tree_t b_mat_index(3, m1->boundaryMatrix, 10);
-    b_mat_index.index->buildIndex();
-    PointMatrix m1Matrix = m1->buildMatrix();
     
     //For each point pi in MA Find the local neighborhood N(pi) Calculate the transformation Ti based on φ|N(pi)
     for (size_t vi = 0; vi < vcount; vi++){
-      
+      my_kd_tree_t b_mat_index(3, m1->boundaryMatrix, 10);
+      b_mat_index.index->buildIndex();
+      PointMatrix m1Matrix = m1->buildMatrix();
       std::vector<double> query_pt(3);
       query_pt[0] =  m1Matrix(vi,0);
       query_pt[1] =  m1Matrix(vi,1);
@@ -351,8 +350,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       }
       //bounding boxes
       Vec3f lbbMin, lbbMax, cbbMin, cbbMax;
-      //lbbMin = lbbMax = OpenMesh::vector_cast<Vec3f>(m1->mesh.point(m1->mesh.vertex_handle(intersection[0])));
-      
+      bool set = false;
       PointMatrix localMatrix(intersection.size(),3);
       PointMatrix correspondMatrix(intersection.size(),3);
       int x = 0;
@@ -360,8 +358,11 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
         for (size_t j = 0; j < intersection.size(); j++){
           if (m1SnapRegion[i] == intersection[j]){
             VertexHandle vh = m1->mesh.vertex_handle(intersection[j]);
-            m1->colourFaceFromVertexIndex(intersection[j],Point(10+i,i,i));
+            m1->colourFaceFromVertexIndex(intersection[j],Point(10,10,10));
             Point p = m1->mesh.point(vh);
+            if (!set){
+              lbbMin = lbbMax = OpenMesh::vector_cast<Vec3f>(p);
+            }
             lbbMin.minimize( OpenMesh::vector_cast<Vec3f>(p));
             lbbMax.maximize( OpenMesh::vector_cast<Vec3f>(p));
             localMatrix(x,0) = p[0];
@@ -369,10 +370,14 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
             localMatrix(x,2) = p[2];
             
             VertexHandle c_vh = m2->mesh.vertex_handle(m2SnapRegion[correspondVector[i]]);
-            m2->colourFaceFromVertexIndex(m2SnapRegion[correspondVector[i]],Point(10+i,i,i));
+            m2->colourFaceFromVertexIndex(m2SnapRegion[correspondVector[i]],Point(10,10,10));
             Point q = m2->mesh.point(c_vh);
-            cbbMin.minimize( OpenMesh::vector_cast<Vec3f>(q));
-            cbbMax.maximize( OpenMesh::vector_cast<Vec3f>(q));
+            if (!set){
+              cbbMin = cbbMax = OpenMesh::vector_cast<Vec3f>(q);
+              set = true;
+            }
+            cbbMin.minimize(OpenMesh::vector_cast<Vec3f>(q));
+            cbbMax.maximize(OpenMesh::vector_cast<Vec3f>(q));
             correspondMatrix(x,0) = q[0];
             correspondMatrix(x,1) = q[1];
             correspondMatrix(x,2) = q[2];
@@ -380,10 +385,12 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
           }
         }
       }
-      //std::cout << correspondMatrix(0,0) << "corMat \n";
+      
       
       //apply ICP
-      float scale = (lbbMax - lbbMin).length() / (cbbMax - cbbMax).length();
+      std::cout << lbbMax - lbbMin <<" "<< (lbbMax - lbbMin).length() << "\n";
+      double scale = (lbbMax - lbbMin).length() / (cbbMax - cbbMax).length();
+      scaling[vi] = scale;
       Matrix<double, 1, 3> localMean = localMatrix.colwise().mean();
       Matrix<double, 1, 3> coreMean = correspondMatrix.colwise().mean();
       
@@ -404,11 +411,12 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       Matrix<double, 1, 3> t = temp1 - temp2;
       if (isnan(R(0,0) + R(1,1) + R(2,2)) || isinf(t.norm()) ) {
         std::cout << "threw error " << "\n\n";
-        std::cout << "Sum of diagonal of R " << (R(0,0) + R(1,1) + R(2,2)) << "\n";
-        std::cout << "Norm of t " << t.norm() << "\n\n";
+        std::cout << "R " << (R(0,0) + R(1,1) + R(2,2)) << "\n";
+        std::cout << "t " << t.norm() << "\n\n";
       } else {
         std::cout << "Sum of diagonal of R " << (R(0,0) + R(1,1) + R(2,2)) << "\n";
         std::cout << "Norm of t " << t.norm() << "\n\n";
+        std::cout << "Scaling " << scale << "\n\n";
       }
       rotations.push_back(R);
       translations.push_back(t);
@@ -420,22 +428,24 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
     }
     
     float li = iterCount+1/iterations;
+    li =1;
     int it = 0;
     for (typename M::VertexIter v_it=m1->mesh.vertices_begin(); v_it!=m1->mesh.vertices_end(); ++v_it)
     {
       Matrix<double, 3, 3> R = rotations[it];
-      float S = scaling[it];
+      double S = scaling[it];
       Matrix<double, 1, 3> T = translations[it];
       
-      //R = R * li;
-      //S = S * li;
-      //T = T * li;
+      R = R * li;
+      S = S * li;
+      T = T * li;
       //scaling
       Point vertex = m1->mesh.point(*v_it);
+      //vertex = Point(vertex[0]*S, vertex[1]*S, vertex[2]*S);
       Eigen::Vector3d p = Eigen::Vector3d(vertex[0], vertex[1], vertex[2]);
       p = R * p;
-      m1->mesh.set_point( *v_it, vertex - Point(T(0,0),T(0,1),T(0,2)));
-      m1->mesh.set_point( *v_it, vertex - Point(T(0,0),T(0,1),T(0,2)));
+      m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]));
+      //m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) + Point(T(0,0),T(0,1),T(0,2)));
       it++;
     }
     std::cout << "Iteration " << iterCount << "\n";
