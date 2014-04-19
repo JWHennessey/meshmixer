@@ -450,7 +450,6 @@ QtModelT<M>::buildMatrix()
   return m;
 }
 
-
 template<typename M>
 double
 QtModelT<M>::gauss_curvature(VertexHandle _vh) {
