@@ -1205,7 +1205,7 @@ void
 QtModelT<M>::autoSelect()
 {
   
-  if(sourceRegion.size() != 0 && sinkRegion.size()!=0)
+  if(stroke.size()!=0)
   {
   std::cout << "Auto Select" << "\n";
   dest = -1;
