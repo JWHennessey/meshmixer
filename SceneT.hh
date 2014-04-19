@@ -48,7 +48,9 @@ protected:
     QWidget *copyButton;
     QWidget *flipRegionsButton;
     QWidget *geoTreeButton;
+    QWidget *exportButton;
     QSpinBox *geoTreeSpinBox;
+    QSpinBox *pasteSpinBox;
     void wheelEvent(QGraphicsSceneWheelEvent * wheelEvent);
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
@@ -73,6 +75,7 @@ protected:
     void autoSelect();
     void flipRegions();
     void addMesh(MyMesh m_mymesh);
+    void exportMesh();
 
 private:
     int modelCount;

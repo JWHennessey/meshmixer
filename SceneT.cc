@@ -114,7 +114,7 @@ SceneT<M>::SceneT()
   controls->layout()->addWidget(removeModelButton);
   removeModelButton->setHidden(true);
 
-  autoSelectButton = new QPushButton(tr("Auto Select"));
+  autoSelectButton = new QPushButton(tr("Segment From Stroke"));
   controls->layout()->addWidget(autoSelectButton);
   autoSelectButton->setHidden(true);
 
@@ -138,6 +138,14 @@ SceneT<M>::SceneT()
   controls->layout()->addWidget(deleteButton);
   deleteButton->setHidden(true);
 
+
+  pasteSpinBox = new QSpinBox();
+  pasteSpinBox->setMinimum(1);
+  pasteSpinBox->setMaximum(10);
+  pasteSpinBox->setPrefix("Mesh No.: ");
+  controls->layout()->addWidget(pasteSpinBox);
+  pasteSpinBox->setHidden(true);
+
   pasteButton = new QPushButton(tr("Paste"));
   controls->layout()->addWidget(pasteButton);
   pasteButton->setHidden(true);
@@ -145,6 +153,10 @@ SceneT<M>::SceneT()
   flipRegionsButton = new QPushButton(tr("Switch Source / Sink"));
   controls->layout()->addWidget(flipRegionsButton);
   flipRegionsButton->setHidden(true);
+
+  exportButton = new QPushButton(tr("Export"));
+  controls->layout()->addWidget(exportButton);
+  exportButton->setHidden(true);
 
   geoTreeSpinBox = new QSpinBox();
   geoTreeSpinBox->setMinimum(1);
@@ -819,6 +831,8 @@ SceneT<M>::addMesh(MyMesh m_mymesh)
           toggleFuzzyButton->setHidden(false);
           autoSelectButton->setHidden(false);
           flipRegionsButton->setHidden(false);
+          exportButton->setHidden(false);
+          pasteSpinBox->setHidden(false);
           break;
         case 2:
           radio3->setHidden(false);
@@ -1324,9 +1338,11 @@ SceneT<M>::removeMesh()
     copyButton->setHidden(true);
     geoTreeButton->setHidden(true);
     geoTreeSpinBox->setHidden(true);
+    pasteSpinBox->setHidden(true);
     toggleFuzzyButton->setHidden(true);
     autoSelectButton->setHidden(true);
     flipRegionsButton->setHidden(true);
+    exportButton->setHidden(true);
   }
   else
   {
@@ -1353,7 +1369,10 @@ SceneT<M>::removeMesh()
       toggleFuzzyButton->setHidden(true);
       modelCount = 0;
       autoSelectButton->setHidden(true);
+      pasteSpinBox->setHidden(true);
+      toggleFuzzyButton->setHidden(true);
       flipRegionsButton->setHidden(true);
+      exportButton->setHidden(true);
     }
   }
 
@@ -1440,6 +1459,14 @@ void
 SceneT<M>::paste()
 {
   std::cout << "Paste Pressesed" << "\n";
+  const int radioId = whichRadioButton();
+  int otherMesh = pasteSpinBox->value() - 1;
+  if(radioId != 1 && models[radioId-2] != NULL && models[otherMesh] != NULL && otherMesh != (radioId-2) ){
+    softICP(models[radioId-2], models[otherMesh]);
+  }
+  else{
+    std::cout << "Bad pair selected for paste" << "\n";
+  }
 }
 
 template <typename M>
@@ -1524,6 +1551,17 @@ SceneT<M>::flipRegions()
   const int radioId = whichRadioButton();
   if(radioId != 1 && models[radioId-2] != NULL){
     models[radioId-2]->flipRegions();
+  }
+}
+
+
+template <typename M>
+void
+SceneT<M>::exportMesh()
+{
+  const int radioId = whichRadioButton();
+  if(radioId != 1 && models[radioId-2] != NULL){
+    models[radioId-2]->exportMesh();
   }
 }
 

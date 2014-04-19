@@ -31,6 +31,7 @@ public:
       connect(autoSelectButton, SIGNAL(clicked()), this, SLOT(autoSelectSlot()));
       connect(toggleFuzzyButton, SIGNAL(clicked()), this, SLOT(toggleFuzzySlot()));
       connect(flipRegionsButton, SIGNAL(clicked()), this, SLOT(flipRegionsSlot()));
+      connect(exportButton, SIGNAL(clicked()), this, SLOT(exportSlot()));
     }
 public slots:
     void selectMesh()
@@ -68,6 +69,9 @@ public slots:
     }
     void flipRegionsSlot(){
       flipRegions();
+    }
+    void exportSlot(){
+      exportMesh();
     }
 };
 #endif
