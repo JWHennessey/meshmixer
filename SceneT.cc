@@ -296,6 +296,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
   m2->applyTransformations();
   double sizeM1 = computeSnapRegionSize(m1,m2);
   double sizeM2 = computeSnapRegionSize(m2,m1);
+  if (sizeM1 == 0 || sizeM2 == 0) return;
   double snapSize = sizeM1 > sizeM2 ? sizeM1 : sizeM2;
   //snapSize = 0.2;
   std::vector<size_t> m1SnapRegion = computeSnapRegion(m1, snapSize);
@@ -463,7 +464,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       Eigen::Vector3d p = Eigen::Vector3d(vertex[0], vertex[1], vertex[2]);
       p = R * p;
       m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]));
-      //m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) + Point(T(0,0),T(0,1),T(0,2)));
+      m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) + Point(T(0,0),T(0,1),T(0,2)));
     }
     std::cout << "Iteration " << iterCount << "\n";
     iterCount++;
@@ -916,8 +917,8 @@ SceneT<M>::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
       {
 
         moveMeshInOneAxis(event);
-        models[radioId-2]->updateHorizontal(delta.x() * TANSLATE_SPEED);
-        models[radioId-2]->updateVertical(delta.y() * TANSLATE_SPEED);
+        models[radioId-2]->updateHorizontal(delta.x()* TANSLATE_SPEED);
+        models[radioId-2]->updateVertical(delta.y()* TANSLATE_SPEED);
         //models[radioId-2]->updateHorizontal(p[0] * TANSLATE_SPEED);
         //models[radioId-2]->updateVertical(p[1] * TANSLATE_SPEED);
         //models[radioId-2]->updateZAxis(p[2] * TANSLATE_SPEED);
@@ -957,7 +958,7 @@ SceneT<M>::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
   int selected = whichRadioButton() - 2;
   if(modelCount > 0 && event->button() == LeftButton && selected >= 0 && 
-      (mouseRadioSelected() == 3 || mouseRadioSelected() == 4 || mouseRadioSelected() == 5 ) && 
+      (mouseRadioSelected() == 1 || mouseRadioSelected() == 3 || mouseRadioSelected() == 4 || mouseRadioSelected() == 5 ) &&
        !inRotatingMode){
     paintFaces(event);
     inPaintingMode = true;
@@ -1001,7 +1002,7 @@ SceneT<M>::keyReleaseEvent( QKeyEvent* event)
   switch(event->key())
   {
     case Key_Alt:
-      if((mouseRadioSelected() == 3 || mouseRadioSelected() == 4 || mouseRadioSelected() == 5 ))
+      if((mouseRadioSelected() == 1 ||mouseRadioSelected() == 3 || mouseRadioSelected() == 4 || mouseRadioSelected() == 5 ))
         inPaintingMode = true;
       inRotatingMode = false;
       break;
@@ -1037,7 +1038,7 @@ SceneT<M>::keyPressEvent( QKeyEvent* event)
     switch(event->key())
     {
       case Key_Alt:
-        if((mouseRadioSelected() == 3 || mouseRadioSelected() == 4 || mouseRadioSelected() == 5 ))
+        if((mouseRadioSelected() == 1 || mouseRadioSelected() == 3 || mouseRadioSelected() == 4 || mouseRadioSelected() == 5 ))
         {  
           inPaintingMode = false;
           inRotatingMode = true;

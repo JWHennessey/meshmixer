@@ -30,11 +30,7 @@ QtModelT<M>::QtModelT(M& m)
   mesh = m;
   double min_x, max_x, min_y, max_y, min_z, max_z;
   bool first = true;
-  /*
-  OpenMesh::VPropHandleT< double > gauss;
-  if(!mesh.get_property_handle(gauss, "Gaussian Curvature"))
-    mesh.add_property(gauss, "Gaussian Curvature" );
-  */
+  std::cout << "new mesh \n";
   // bounding box
   
   Vec3f bbMin, bbMax;
@@ -50,7 +46,7 @@ QtModelT<M>::QtModelT(M& m)
       max_z = mesh.point(*v_it)[2];
       first = false;
     }
-
+    
     if (mesh.is_boundary(*v_it)) boundaryPoints.push_back(*v_it);
 
 
@@ -155,7 +151,7 @@ QtModelT<M>::findBoundaryVertices(){
   {
     if (mesh.is_boundary(*v_it)) {
       boundaryPoints.push_back(*v_it);
-      colourFaceFromVertexIndex(v_it->idx(), Point(255,0,255));
+      colourFaceFromVertexIndex(v_it->idx(), Point(255,255,255));
     }
   }
   boundaryMatrix.resize(boundaryPoints.size(), 3);
@@ -206,9 +202,9 @@ QtModelT<M>::colourFaceFromVertexIndex(int vertexNumber, Point col){
   if(vh.is_valid())
   for (typename M::VertexFaceIter vf_it=mesh.vf_begin(vh); vf_it!=mesh.vf_end(vh); ++vf_it)
   {
-    //if (vf_it->is_valid()){
-    //mesh.set_color(*vf_it, typename M::Color(col[0],col[1],col[2]));
-    //}
+    if (vf_it->is_valid()){
+    mesh.set_color(*vf_it, typename M::Color(col[0],col[1],col[2]));
+    }
   }
 }
 
@@ -319,29 +315,31 @@ template <typename M>
 void
 QtModelT<M>::render()
 {
-    typename M::ConstFaceIter    fIt(mesh.faces_begin()),
-                                 fEnd(mesh.faces_end());
-
-    typename M::ConstFaceVertexIter fvIt;
-    unsigned int index = 0;
-    //std::cout << "Render" << "\n";
-    //std::cout << horizontal << "\n";
-    //std::cout << vertical << "\n";
-    float matrix[16];
-    glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
-    //glPopMatrix();
-    glPushMatrix();
-    //glLoadIdentity();
-    glTranslatef(horizontal, vertical, zAxis);
-    //glMultMatrixf(matrix);
+  typename M::ConstFaceIter    fIt(mesh.faces_begin()),
+  fEnd(mesh.faces_end());
+  
+  typename M::ConstFaceVertexIter fvIt;
+  unsigned int index = 0;
+  //std::cout << "Render" << "\n";
+  //std::cout << horizontal << "\n";
+  //std::cout << vertical << "\n";
+  float matrix[16];
+  glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
+  //glPopMatrix();
+  glPushMatrix();
+  //glLoadIdentity();
+  //glMultMatrixf(matrix);
   
   //glEnable(GL_LIGHTING);
   //glShadeModel(GL_FLAT);
-  
+  glLoadIdentity();
+  glTranslatef(0, 0, -4.5);
+  glTranslatef(horizontal, vertical, zAxis);
+  glMultMatrixf(matrix);
   glRotatef(meshRotation.x(), 1, 0, 0);
   glRotatef(meshRotation.y(), 0, 1, 0);
   glRotatef(meshRotation.z(), 0, 0, 1);
-  
+
   glEnable(GL_DEPTH_TEST);
   glEnableClientState(GL_VERTEX_ARRAY);
   glVertexPointer(3, GL_FLOAT, 0, mesh.points());
@@ -390,12 +388,12 @@ QtModelT<M>::render()
   }
   glPopMatrix();
   glDisable(GL_NORMALIZE);
-
+  
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);
-
+  
   glPopMatrix();
-
+  
 }
 
 template <typename M>
