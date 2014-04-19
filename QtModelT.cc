@@ -151,14 +151,12 @@ void
 QtModelT<M>::findBoundaryVertices(){
   boundaryPoints.clear();
   boundaryPoints.reserve(mesh.n_vertices()/2);
-  int i = 0;
-  for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it)
+  for (typename M::VertexIter v_it=mesh.vertices_sbegin(); v_it!=mesh.vertices_end(); ++v_it)
   {
     if (mesh.is_boundary(*v_it)) {
       boundaryPoints.push_back(*v_it);
-      colourFaceFromVertexIndex(i,Point(255,0,255));
+      colourFaceFromVertexIndex(v_it->idx(), Point(255,0,255));
     }
-    i++;
   }
   boundaryMatrix.resize(boundaryPoints.size(), 3);
   for (int count = 0; count < boundaryPoints.size(); ++count)
@@ -167,7 +165,6 @@ QtModelT<M>::findBoundaryVertices(){
     boundaryMatrix(count, 0) = mesh.point(v_it)[0];
     boundaryMatrix(count, 1) = mesh.point(v_it)[1];
     boundaryMatrix(count, 2) = mesh.point(v_it)[2];
-    count ++;
   }
 }
 
@@ -205,10 +202,13 @@ QtModelT<M>::addToStroke(int f){
 template <typename M>
 void
 QtModelT<M>::colourFaceFromVertexIndex(int vertexNumber, Point col){
-  typename M::VertexHandle point = mesh.vertex_handle(vertexNumber);
-  for (typename M::VertexFaceIter vf_it=mesh.vf_begin(point); vf_it!=mesh.vf_end(point); ++vf_it)
+  typename M::VertexHandle vh = mesh.vertex_handle(vertexNumber);
+  if(vh.is_valid())
+  for (typename M::VertexFaceIter vf_it=mesh.vf_begin(vh); vf_it!=mesh.vf_end(vh); ++vf_it)
   {
-    mesh.set_color(*vf_it, typename M::Color(col[0],col[1],col[2]));
+    //if (vf_it->is_valid()){
+    //mesh.set_color(*vf_it, typename M::Color(col[0],col[1],col[2]));
+    //}
   }
 }
 
@@ -430,14 +430,13 @@ PointMatrix//flann::Matrix<float>
 QtModelT<M>::buildMatrix()
 {
   PointMatrix m(mesh.n_vertices(), 3);
-  int count = 0;
 
   for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
   {
+    int count = v_it->idx();
     m(count, 0) = mesh.point(*v_it)[0];
     m(count, 1) = mesh.point(*v_it)[1];
     m(count, 2) = mesh.point(*v_it)[2];
-    count += 1;
   }
   return m;
 }
@@ -1160,7 +1159,7 @@ QtModelT<M>::deleteSink()
     typename M::FaceHandle fh = mesh.face_handle(*it);
     mesh.delete_face(fh, false);
   }
-  mesh.garbage_collection();
+  //mesh.garbage_collection();
 }
 
 template<typename M>

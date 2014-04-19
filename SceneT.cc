@@ -305,7 +305,10 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
     int elasticity = 1;
     
     //For each point pi in MA Find the local neighborhood N(pi) Calculate the transformation Ti based on φ|N(pi)
-    for (size_t vi = 0; vi < vcount; vi++){
+    
+    for (typename M::VertexIter v_it=m1->mesh.vertices_begin(); v_it!=m1->mesh.vertices_end(); ++v_it)
+    {
+      int vi = v_it->idx();
       my_kd_tree_t b_mat_index(3, m1->boundaryMatrix, 10);
       b_mat_index.index->buildIndex();
       PointMatrix m1Matrix = m1->buildMatrix();
@@ -429,9 +432,9 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
     
     float li = iterCount+1/iterations;
     li =1;
-    int it = 0;
     for (typename M::VertexIter v_it=m1->mesh.vertices_begin(); v_it!=m1->mesh.vertices_end(); ++v_it)
     {
+      int it = v_it->idx();
       Matrix<double, 3, 3> R = rotations[it];
       double S = scaling[it];
       Matrix<double, 1, 3> T = translations[it];
@@ -439,6 +442,9 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       R = R * li;
       S = S * li;
       T = T * li;
+      Eigen::Quaterniond quaternion (R);
+      quaternion * T;
+      quaternion * R;
       //scaling
       Point vertex = m1->mesh.point(*v_it);
       //vertex = Point(vertex[0]*S, vertex[1]*S, vertex[2]*S);
@@ -446,7 +452,6 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       p = R * p;
       m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]));
       //m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) + Point(T(0,0),T(0,1),T(0,2)));
-      it++;
     }
     std::cout << "Iteration " << iterCount << "\n";
     iterCount++;
