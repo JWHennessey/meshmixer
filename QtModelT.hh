@@ -70,6 +70,7 @@ public:
     M copy();
     void exportMesh();
     void cleanMesh();
+    void mergeMesh(M otherMesh);
 private:
     bool facesConnected(int f1, int f2);
     void addToStroke(int f);

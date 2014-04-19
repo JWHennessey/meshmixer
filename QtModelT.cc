@@ -1402,4 +1402,38 @@ QtModelT<M>::exportMesh()
     std::cout << "Exported to export.obj" << "\n";
   }
 }
+
+template <typename M>
+void
+QtModelT<M>::mergeMesh(M otherMesh)
+{
+  //typedef typename M::Point Point;
+  //QVector3D tempR = meshRotation * deg2Rad;
+  //Eigen::AngleAxis<float> aax(tempR.x(), Eigen::Vector3f(1, 0, 0));
+  //Eigen::AngleAxis<float> aay(tempR.y(), Eigen::Vector3f(0, 1, 0));
+  //Eigen::AngleAxis<float> aaz(tempR.z(), Eigen::Vector3f(0, 0, 1));
+  //Eigen::Quaternion<float> rotation = aax * aay * aaz;
+
+  //for (typename M::VertexIter v_it=otherMesh.vertices_begin(); v_it!=otherMesh.vertices_end(); ++v_it) 
+  //{
+    //Eigen::Vector3f p = Eigen::Vector3f(otherMesh.point(*v_it)[0], otherMesh.point(*v_it)[1], otherMesh.point(*v_it)[2]);
+    //p = rotation * p;
+    //otherMesh.set_point( *v_it, Point(p[0], p[1], p[2]) );
+    //otherMesh.set_point( *v_it, otherMesh.point(*v_it) + Point(horizontal, vertical, depth) );
+  //} 
+
+  for (typename M::FaceIter f_it=otherMesh.faces_begin(); f_it!=otherMesh.faces_end(); ++f_it) 
+  {
+    std::vector<typename M::VertexHandle>  face_vhandles;
+    for (typename M::FaceVertexIter vf_it=otherMesh.fv_iter(f_it.handle()); vf_it; ++vf_it)
+    {
+      face_vhandles.push_back(mesh.add_vertex(otherMesh.point(*vf_it)));
+    }
+    mesh.add_face(face_vhandles);
+  }
+  calcNormals();
+  clearColour();
+}
+
+
 #endif
