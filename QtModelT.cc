@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include "maxflow/graph.h"
 //#include <omp.h>
+#include <unordered_map>
+
 
 template <typename M>
 QtModelT<M>::QtModelT(M& m)
@@ -46,9 +48,12 @@ QtModelT<M>::QtModelT(M& m)
       max_z = mesh.point(*v_it)[2];
       first = false;
     }
-    
-    if (mesh.is_boundary(*v_it)) boundaryPoints.push_back(*v_it);
-
+   
+    //mesh.adjust_outgoing_halfedge(*v_it);
+    //if (mesh.is_boundary(*v_it)){ 
+      //std::cout << "" << "";
+      //boundaryPoints.push_back(*v_it);
+    //}
 
     if(mesh.point(*v_it)[0] < min_x )
       min_x = mesh.point(*v_it)[0];
@@ -146,11 +151,17 @@ void
 QtModelT<M>::findBoundaryVertices(){
   boundaryPoints.clear();
   boundaryPoints.reserve(mesh.n_vertices()/2);
+  int noBoundries = 0;
   for (typename M::VertexIter v_it=mesh.vertices_sbegin(); v_it!=mesh.vertices_end(); ++v_it)
   {
+    mesh.adjust_outgoing_halfedge(*v_it);
     if (mesh.is_boundary(*v_it)) {
+      std::cout << "Is boundry " << "\n";
       boundaryPoints.push_back(*v_it);
       colourFaceFromVertexIndex(v_it->idx(), Point(0,0,255));
+    }
+    else{
+      std::cout << "Not boundtry" << "\n";
     }
   }
   boundaryMatrix.resize(boundaryPoints.size(), 3);
@@ -437,7 +448,6 @@ QtModelT<M>::buildMatrix()
   }
   return m;
 }
-
 
 template<typename M>
 double
@@ -761,17 +771,25 @@ QtModelT<M>::cut()
 {
   std::cout << "Cut" << "\n";
   M m;
+  std::unordered_map<int, typename M::VertexHandle> mymap;
+
   for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
   {
     typename M::FaceHandle fh = mesh.face_handle(*it);
     std::vector<typename M::VertexHandle>  face_vhandles;
     for (typename M::FaceVertexIter vf_it=mesh.fv_iter(fh); vf_it; ++vf_it)
     {
-      face_vhandles.push_back(m.add_vertex(mesh.point(*vf_it)));
+      typename std::unordered_map<int, typename M::VertexHandle>::const_iterator got = mymap.find (vf_it.handle().idx());
+      if ( got == mymap.end() ){
+        typename M::VertexHandle vh = m.add_vertex(mesh.point(*vf_it));
+        face_vhandles.push_back(vh);
+        mymap.insert(std::make_pair<int, typename M::VertexHandle>(vf_it.handle().idx(), vh ));
+      }else
+        face_vhandles.push_back(got->second);
     }
     m.add_face(face_vhandles);
   }
-  
+ 
   deleteSink();
   typedef typename M::Point Point;
   QVector3D tempR = meshRotation * deg2Rad;
@@ -1152,14 +1170,14 @@ template<typename M>
 void
 QtModelT<M>::deleteSink()
 {
-  //mesh.garbage_collection();
-  //for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
-  //{
-    //typename M::FaceHandle fh = mesh.face_handle(*it);
-    //mesh.delete_face(fh, false);
-  //}
-  //mesh.garbage_collection();
-  cleanMesh();
+  mesh.garbage_collection();
+  for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
+  {
+    typename M::FaceHandle fh = mesh.face_handle(*it);
+    mesh.delete_face(fh, true);
+  }
+  mesh.garbage_collection();
+  //cleanMesh();
 }
 
 template<typename M>
@@ -1336,16 +1354,31 @@ QtModelT<M>::copy()
 {
   std::cout << "Copy" << "\n";
   M m;
+  //m.assign_connectivity(mesh);
+  ////for ( auto it = sourceRegion.begin(); it != sourceRegion.end(); ++it )
+  //{
+    //typename M::FaceHandle fh = m.face_handle(*it);
+    //m.delete_face(fh, true);
+  //}
+  std::unordered_map<int, typename M::VertexHandle> mymap;
+
   for ( auto it = sinkRegion.begin(); it != sinkRegion.end(); ++it )
   {
     typename M::FaceHandle fh = mesh.face_handle(*it);
     std::vector<typename M::VertexHandle>  face_vhandles;
     for (typename M::FaceVertexIter vf_it=mesh.fv_iter(fh); vf_it; ++vf_it)
     {
-      face_vhandles.push_back(m.add_vertex(mesh.point(*vf_it)));
+      typename std::unordered_map<int, typename M::VertexHandle>::const_iterator got = mymap.find (vf_it.handle().idx());
+      if ( got == mymap.end() ){
+        typename M::VertexHandle vh = m.add_vertex(mesh.point(*vf_it));
+        face_vhandles.push_back(vh);
+        mymap.insert(std::make_pair<int, typename M::VertexHandle>(vf_it.handle().idx(), vh ));
+      }else
+        face_vhandles.push_back(got->second);
     }
     m.add_face(face_vhandles);
   }
+
   typedef typename M::Point Point;
   QVector3D tempR = meshRotation * deg2Rad;
   Eigen::AngleAxis<float> aax(tempR.x(), Eigen::Vector3f(1, 0, 0));

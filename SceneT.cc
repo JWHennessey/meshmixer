@@ -1459,12 +1459,11 @@ SceneT<M>::paste()
   const int radioId = whichRadioButton();
   int otherMesh = pasteSpinBox->value() - 1;
   if(radioId != 1 && models[radioId-2] != NULL && models[otherMesh] != NULL && otherMesh != (radioId-2) ){
-    if(softICP(models[radioId-2], models[otherMesh])){
+    softICP(models[radioId-2], models[otherMesh]);
     models[otherMesh]->applyTransformations();
-    models[radioId-2]->mergeMesh(models[otherMesh]->mesh);
-    models[otherMesh] = NULL;
-    removeRadio(otherMesh+2);
-    }
+    //models[radioId-2]->mergeMesh(models[otherMesh]->mesh);
+    //models[otherMesh] = NULL;
+    //removeRadio(otherMesh+2);
   }
   else{
     std::cout << "Bad pair selected for paste" << "\n";
