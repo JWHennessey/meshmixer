@@ -94,11 +94,6 @@ QtModelT<M>::QtModelT(M& m)
 
   // set center and radius
   center = (bbMin+bbMax)*0.5;
-  //horizontal = -center[0];
-  //vertical = -center[1];
-  //zAxis = -center[2];
-  
-  applyTransformations();
   //findBoundaryVertices();
   /*
   typedef typename M::Point Point;
@@ -112,6 +107,10 @@ QtModelT<M>::QtModelT(M& m)
   }
    */
   updateColour();
+  //horizontal = -center[0];
+  //vertical = -center[1];
+  //zAxis = -center[2];
+  applyTransformations();
   calcNormals();
 }
 
@@ -151,7 +150,7 @@ QtModelT<M>::findBoundaryVertices(){
   {
     if (mesh.is_boundary(*v_it)) {
       boundaryPoints.push_back(*v_it);
-      colourFaceFromVertexIndex(v_it->idx(), Point(255,255,255));
+      colourFaceFromVertexIndex(v_it->idx(), Point(0,0,255));
     }
   }
   boundaryMatrix.resize(boundaryPoints.size(), 3);
@@ -231,15 +230,15 @@ QtModelT<M>::select(int faceNumber){
       typename M::FaceHandle fh1 = mesh.face_handle(faceNumber);
       for (typename M::FaceFaceIter ff_it1=mesh.ff_iter(fh1); ff_it1; ++ff_it1)
       {
-        for (typename M::FaceFaceIter ff_it2=mesh.ff_iter(ff_it1.handle()); ff_it2; ++ff_it2)
+        for (typename M::FaceFaceIter ff_it2=mesh.ff_iter(*ff_it1); ff_it2; ++ff_it2)
         {
-          //for (typename M::FaceFaceIter ff_it3=mesh.ff_iter(ff_it2.handle()); ff_it3; ++ff_it3)
+          //for (typename M::FaceFaceIter ff_it3=mesh.ff_iter(ff_it2->); ff_it3; ++ff_it3)
           //{
-            //addToFuzzyRegion(ff_it3.handle().idx());
+            //addToFuzzyRegion(ff_it3->idx());
           //}
-          addToFuzzyRegion(ff_it2.handle().idx());
+          addToFuzzyRegion(ff_it2->idx());
         }
-        addToFuzzyRegion(ff_it1.handle().idx());
+        addToFuzzyRegion(ff_it1->idx());
       }
     }
     else
@@ -332,10 +331,10 @@ QtModelT<M>::render()
   
   //glEnable(GL_LIGHTING);
   //glShadeModel(GL_FLAT);
-  glLoadIdentity();
-  glTranslatef(0, 0, -4.5);
+  //glLoadIdentity();
+  //glTranslatef(0, 0, -4.5);
   glTranslatef(horizontal, vertical, zAxis);
-  glMultMatrixf(matrix);
+  //glMultMatrixf(matrix);
   glRotatef(meshRotation.x(), 1, 0, 0);
   glRotatef(meshRotation.y(), 0, 1, 0);
   glRotatef(meshRotation.z(), 0, 0, 1);
@@ -945,7 +944,7 @@ QtModelT<M>::regionGrow(int f, std::unordered_set<int>* region, int type)
 
   for (typename M::FaceFaceIter ff_it=mesh.ff_iter(fh); ff_it; ++ff_it)
   {
-    f = ff_it.handle().idx();
+    f = ff_it->idx();
     //std::cout << "FFI " << f << "\n";
     if(!inRegion(f))
     {
@@ -1035,14 +1034,14 @@ QtModelT<M>::graphCut()
     {
       int otherFaceId = -1;
       for(int j = 0; j<fuzzyRegion.size(); j++){
-        if(mapping[j] == ff_it.handle().idx())
+        if(mapping[j] == ff_it->idx())
         {
           otherFaceId = j;
         }
       }
       if(otherFaceId != -1)
       {
-        double dist = faceDist(mapping[i], ff_it.handle().idx());
+        double dist = faceDist(mapping[i], ff_it->idx());
         g->add_edge(i, otherFaceId,  dist, dist );
       }
     }
@@ -1213,14 +1212,14 @@ QtModelT<M>::autoSelect()
   calcStrokeProxies();
   typename M::FaceHandle face = mesh.face_handle(stroke.front());
   typename M::FaceVertexIter fv_it = mesh.fv_iter(face);
-  source = fv_it.handle().idx();
+  source = fv_it->idx();
   double distances[mesh.n_vertices()];
   int previous[mesh.n_vertices()];
   std::unordered_set<int> q;
   distances[source] = 0;
   for (typename M::VertexIter v_it=mesh.vertices_begin(); v_it!=mesh.vertices_end(); ++v_it) 
   {
-    int v = v_it.handle().idx();
+    int v = v_it->idx();
     if(v != source)
     {
       distances[v] = 1000.0;
@@ -1248,7 +1247,7 @@ QtModelT<M>::autoSelect()
     typename M::VertexHandle vh = mesh.vertex_handle(u);
     for (typename M::VertexVertexIter vv_it=mesh.vv_iter(vh); vv_it; ++vv_it)
     {
-      int v = vv_it.handle().idx();
+      int v = vv_it->idx();
       float alt = distances[u] + cost(u, v);
       if(alt < distances[v])
       {
@@ -1260,7 +1259,7 @@ QtModelT<M>::autoSelect()
   //std::cout << "Q Empty" << "\n";
   typename M::FaceHandle destFace = mesh.face_handle(stroke.back());
   typename M::FaceVertexIter dest_fv_it = mesh.fv_iter(destFace);
-  dest = dest_fv_it.handle().idx();
+  dest = dest_fv_it->idx();
   for(int i = 0; i<mesh.n_vertices(); i++)
   {
     prev.push_back(previous[i]);
@@ -1278,15 +1277,15 @@ QtModelT<M>::autoSelect()
     typename M::VertexHandle vh1 = mesh.vertex_handle(from);
     for (typename M::VertexFaceIter ff_it1=mesh.vf_iter(vh1); ff_it1; ++ff_it1)
     {
-        for (typename M::FaceFaceIter ff_it2=mesh.ff_iter(ff_it1.handle()); ff_it2; ++ff_it2)
+        for (typename M::FaceFaceIter ff_it2=mesh.ff_iter(*ff_it1); ff_it2; ++ff_it2)
         {
           //for (typename M::FaceFaceIter ff_it3=mesh.ff_iter(ff_it2.handle()); ff_it3; ++ff_it3)
           //{
-            //addToFuzzyRegion(ff_it3.handle().idx());
+            //addToFuzzyRegion(ff_it3->idx());
           //}
-          addToFuzzyRegion(ff_it2.handle().idx());
+          addToFuzzyRegion(ff_it2->idx());
         }
-        addToFuzzyRegion(ff_it1.handle().idx());
+        addToFuzzyRegion(ff_it1->idx());
     }
     //std::cout << "Source " << source << "\n";
     //std::cout << "From " << from << "\n";
@@ -1423,7 +1422,7 @@ QtModelT<M>::mergeMesh(M otherMesh)
   for (typename M::FaceIter f_it=otherMesh.faces_begin(); f_it!=otherMesh.faces_end(); ++f_it) 
   {
     std::vector<typename M::VertexHandle>  face_vhandles;
-    for (typename M::FaceVertexIter vf_it=otherMesh.fv_iter(f_it.handle()); vf_it; ++vf_it)
+    for (typename M::FaceVertexIter vf_it=otherMesh.fv_iter(*f_it); vf_it; ++vf_it)
     {
       face_vhandles.push_back(mesh.add_vertex(otherMesh.point(*vf_it)));
     }

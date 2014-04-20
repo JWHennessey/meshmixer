@@ -288,7 +288,7 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
 }
 
 template <typename M>
-void
+bool
 SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
 {
   typedef nanoflann::KDTreeEigenMatrixAdaptor< PointMatrix > my_kd_tree_t;
@@ -296,7 +296,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
   m2->applyTransformations();
   double sizeM1 = computeSnapRegionSize(m1,m2);
   double sizeM2 = computeSnapRegionSize(m2,m1);
-  if (sizeM1 == 0 || sizeM2 == 0) return;
+  if (sizeM1 == 0 || sizeM2 == 0) return false;
   double snapSize = sizeM1 > sizeM2 ? sizeM1 : sizeM2;
   //snapSize = 0.2;
   std::vector<size_t> m1SnapRegion = computeSnapRegion(m1, snapSize);
@@ -308,11 +308,12 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
   int iterCount = 0;
   int vcount = m1->mesh.n_vertices();
   while (iterCount < iterations){
-    double scaling[vcount];
+    std::vector<Vec3f> scalings;
     std::vector< Matrix<double, 3, 3> > rotations;
     std::vector<Matrix<double, 1, 3> > translations;
     rotations.reserve(m1->mesh.n_vertices());
     translations.reserve(vcount);
+    scalings.reserve(vcount);
     //Find correspondence φ of SA to SB
     std::vector<size_t> correspondVector = findCorrespondence(m1,m2,m1SnapRegion,m2SnapRegion);
     int elasticity = 1;
@@ -341,7 +342,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       
       if (dist == 0) dist = DBL_MIN;
       long indices = pow((iterCount*elasticity)/dist,2);
-      std::cout << exp(-indices) << " exp\n";
+      
       double radius = snapSize * exp(-indices);
       
       std::cout << radius << " radius\n";
@@ -359,14 +360,13 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       std::set_intersection(neighbours.begin(),neighbours.end(),m1SnapRegion.begin(),m1SnapRegion.end(),std::back_inserter(intersection));
       std::cout << intersection.size() << " " << neighbours.size() << " " << m1SnapRegion.size() << " inter\n";
       if (intersection.size() == 0){
-        for (int vx = 0; vx < neighbours.size(); vx++){
+        for (size_t vx = 0; vx < neighbours.size(); vx++){
           m1->colourFaceFromVertexIndex(neighbours[vx],Point(0,0,127));
         }
         break;
       }
       //bounding boxes
       Vec3f lbbMin, lbbMax, cbbMin, cbbMax;
-      bool set = false;
       PointMatrix localMatrix(intersection.size(),3);
       PointMatrix correspondMatrix(intersection.size(),3);
       int x = 0;
@@ -374,9 +374,9 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
         for (size_t j = 0; j < intersection.size(); j++){
           if (m1SnapRegion[i] == intersection[j]){
             VertexHandle vh = m1->mesh.vertex_handle(intersection[j]);
-            m1->colourFaceFromVertexIndex(intersection[j],Point(10,10,10));
+            m1->colourFaceFromVertexIndex(intersection[j],Point(255,0,0));
             Point p = m1->mesh.point(vh);
-            if (!set){
+            if (x == 0){
               lbbMin = lbbMax = OpenMesh::vector_cast<Vec3f>(p);
             }
             lbbMin.minimize( OpenMesh::vector_cast<Vec3f>(p));
@@ -386,11 +386,10 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
             localMatrix(x,2) = p[2];
             
             VertexHandle c_vh = m2->mesh.vertex_handle(m2SnapRegion[correspondVector[i]]);
-            m2->colourFaceFromVertexIndex(m2SnapRegion[correspondVector[i]],Point(10,10,10));
+            m2->colourFaceFromVertexIndex(m2SnapRegion[correspondVector[i]],Point(255,0,0));
             Point q = m2->mesh.point(c_vh);
-            if (!set){
+            if (x == 0){
               cbbMin = cbbMax = OpenMesh::vector_cast<Vec3f>(q);
-              set = true;
             }
             cbbMin.minimize(OpenMesh::vector_cast<Vec3f>(q));
             cbbMax.maximize(OpenMesh::vector_cast<Vec3f>(q));
@@ -404,17 +403,17 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       
       
       //apply ICP
-      std::cout << lbbMax - lbbMin <<" "<< (lbbMax - lbbMin).length() << "\n";
-      double scale = (lbbMax - lbbMin).length() / (cbbMax - cbbMax).length();
-      scaling[vi] = scale;
+      Vec3f localScale = lbbMax - lbbMin;
+      Vec3f correScale = cbbMax - cbbMin;
+      scalings.push_back(localScale/correScale);
       Matrix<double, 1, 3> localMean = localMatrix.colwise().mean();
       Matrix<double, 1, 3> coreMean = correspondMatrix.colwise().mean();
       
-      PointMatrix qHat(localMatrix.rows(), 3);
-      PointMatrix pHat(correspondMatrix.rows(), 3);
+      PointMatrix qHat(x, 3);
+      PointMatrix pHat(x, 3);
       
-      calcBaryCenteredPoints(qHat, localMatrix);
-      calcBaryCenteredPoints(pHat, correspondMatrix);
+      calcBaryCenteredPoints(qHat, correspondMatrix);
+      calcBaryCenteredPoints(pHat, localMatrix);
       
       Matrix<double, 3, 3> A(3,3);
       generateAMatrix(A, pHat, qHat);
@@ -422,17 +421,19 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
       JacobiSVD< MatrixXd > svd(A, ComputeThinU | ComputeThinV);
       
       Matrix<double, 3, 3> R = svd.matrixU() * svd.matrixV().transpose();
-      Matrix<double, 1, 3> temp1 = (R * coreMean.transpose());
-      Matrix<double, 1, 3> temp2 = localMean;
+      Matrix<double, 1, 3> temp1 = (R * localMean.transpose());
+      Matrix<double, 1, 3> temp2 = coreMean;
       Matrix<double, 1, 3> t = temp1 - temp2;
+      std::cout << "Iteration " << iterCount << "\n";
+      
       if (isnan(R(0,0) + R(1,1) + R(2,2)) || isinf(t.norm()) ) {
         std::cout << "threw error " << "\n\n";
-        std::cout << "R " << (R(0,0) + R(1,1) + R(2,2)) << "\n";
-        std::cout << "t " << t.norm() << "\n\n";
+        std::cout << "R error" << (R(0,0) + R(1,1) + R(2,2)) << "\n";
+        std::cout << "t error" << t.norm() << "\n\n";
       } else {
         std::cout << "Sum of diagonal of R " << (R(0,0) + R(1,1) + R(2,2)) << "\n";
         std::cout << "Norm of t " << t.norm() << "\n\n";
-        std::cout << "Scaling " << scale << "\n\n";
+        std::cout << "Scaling " << localScale/correScale << "\n\n";
       }
       rotations.push_back(R);
       translations.push_back(t);
@@ -444,38 +445,32 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
     }
     
     float li = iterCount+1/iterations;
-    li =1;
+    li = 1;
     int it = 0;
     for (typename M::VertexIter v_it=m1->mesh.vertices_begin(); v_it!=m1->mesh.vertices_end(); ++v_it)
     {
       Matrix<double, 3, 3> R = rotations[it];
-      double S = scaling[it];
+      Vec3f S = scalings[it];
       Matrix<double, 1, 3> T = translations[it];
-      
-      R = R * li;
       S = S * li;
       T = T * li;
-      Eigen::Quaterniond quaternion (R);
-      quaternion * T;
-      quaternion * R;
-      //scaling
+      //R = R * li;
+      Eigen::Quaterniond Rquat (R);
+      //R = Rquat*Eigen::UniformScaling<double> (0.5);
       Point vertex = m1->mesh.point(*v_it);
-      //vertex = Point(vertex[0]*S, vertex[1]*S, vertex[2]*S);
+      //vertex = Point(vertex[0]*S[0], vertex[1]*S[1], vertex[2]*S[2]);
       Eigen::Vector3d p = Eigen::Vector3d(vertex[0], vertex[1], vertex[2]);
       p = R * p;
-      m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]));
-      m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]) - Point(T(0,0),T(0,1),T(0,2)));
+      if (isnan(R(0,0) + R(1,1) + R(2,2)) || isinf(T.norm()) ) {
+        m1->mesh.set_point( *v_it, Point(p[0], p[1], p[2]));
+        m1->mesh.set_point( *v_it, m1->mesh.point(*v_it) - Point(T(0,0),T(0,1),T(0,2)));
+      }
       it++;
     }
     std::cout << "Iteration " << iterCount << "\n";
     iterCount++;
   }
-}
-
-template <typename M>
-void
-runSoftICP(){
-  
+  return true;
 }
 
 template <typename M>
@@ -1464,11 +1459,12 @@ SceneT<M>::paste()
   const int radioId = whichRadioButton();
   int otherMesh = pasteSpinBox->value() - 1;
   if(radioId != 1 && models[radioId-2] != NULL && models[otherMesh] != NULL && otherMesh != (radioId-2) ){
-    softICP(models[radioId-2], models[otherMesh]);
+    if(softICP(models[radioId-2], models[otherMesh])){
     models[otherMesh]->applyTransformations();
     models[radioId-2]->mergeMesh(models[otherMesh]->mesh);
     models[otherMesh] = NULL;
     removeRadio(otherMesh+2);
+    }
   }
   else{
     std::cout << "Bad pair selected for paste" << "\n";

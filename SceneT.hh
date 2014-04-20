@@ -67,7 +67,7 @@ protected:
     void copy();
     void deleteSection();
     void geoTree();
-    void softICP(QtModelT<M>* m1, QtModelT<M>* m2);
+    bool softICP(QtModelT<M>* m1, QtModelT<M>* m2);
     std::vector<size_t> computeSnapRegion(QtModelT<M>* m1, QtModelT<M>* m2);
     void clickRadioButton(int index);
     int getClickedMeshIndex(QGraphicsSceneMouseEvent *event);
