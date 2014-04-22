@@ -131,6 +131,7 @@ private:
     void calcBaryCenteredPoints(PointMatrix &matHat, const PointMatrix &mat);
     void generateAMatrix(Matrix<double, 3, 3>  &A, const PointMatrix &m1Hat, const PointMatrix &m2Hat);
     std::vector<size_t> findLocalNeighbourhood(std::vector<double> query_pt, PointMatrix m1Matrix, double radius);
+  bool runICP(QtModelT<M>* m1, QtModelT<M>* m2, std::vector<size_t> m1SnapRegion, std::vector<size_t> m2SnapRegion, double snapSize, int iterCount, int iterations);
 };
 
 #if defined(OM_INCLUDE_TEMPLATES) && !defined(SCENE_CC)

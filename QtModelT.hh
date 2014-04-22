@@ -71,6 +71,7 @@ public:
     void exportMesh();
     void cleanMesh();
     void mergeMesh(M otherMesh);
+    void findBoundaryVertices();
 private:
     bool facesConnected(int f1, int f2);
     void addToStroke(int f);
@@ -111,7 +112,6 @@ private:
     double faceDist(int fId1, int fId2);
     double gauss_curvature(VertexHandle _vh);
     const float deg2Rad;
-    void findBoundaryVertices();
     std::vector<VertexHandle> findBoundaryRing(VertexHandle point);
     Vec3f center;
     bool showFuzzy;

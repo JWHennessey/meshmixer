@@ -112,9 +112,9 @@ QtModelT<M>::QtModelT(M& m)
   }
    */
   updateColour();
-  //horizontal = -center[0];
-  //vertical = -center[1];
-  //zAxis = -center[2];
+  horizontal = -center[0];
+  vertical = -center[1];
+  zAxis = -center[2];
   applyTransformations();
   calcNormals();
 }
@@ -156,12 +156,12 @@ QtModelT<M>::findBoundaryVertices(){
   {
     mesh.adjust_outgoing_halfedge(*v_it);
     if (mesh.is_boundary(*v_it)) {
-      std::cout << "Is boundry " << "\n";
+      //std::cout << "Is boundry " << "\n";
       boundaryPoints.push_back(*v_it);
       colourFaceFromVertexIndex(v_it->idx(), Point(0,0,255));
     }
     else{
-      std::cout << "Not boundtry" << "\n";
+      //std::cout << "Not boundtry" << "\n";
     }
   }
   boundaryMatrix.resize(boundaryPoints.size(), 3);
@@ -779,11 +779,11 @@ QtModelT<M>::cut()
     std::vector<typename M::VertexHandle>  face_vhandles;
     for (typename M::FaceVertexIter vf_it=mesh.fv_iter(fh); vf_it; ++vf_it)
     {
-      typename std::unordered_map<int, typename M::VertexHandle>::const_iterator got = mymap.find (vf_it.handle().idx());
+      typename std::unordered_map<int, typename M::VertexHandle>::const_iterator got = mymap.find (vf_it->idx());
       if ( got == mymap.end() ){
         typename M::VertexHandle vh = m.add_vertex(mesh.point(*vf_it));
         face_vhandles.push_back(vh);
-        mymap.insert(std::make_pair<int, typename M::VertexHandle>(vf_it.handle().idx(), vh ));
+        mymap.insert(std::make_pair<int, typename M::VertexHandle>(vf_it->idx(), vh ));
       }else
         face_vhandles.push_back(got->second);
     }
@@ -1368,11 +1368,11 @@ QtModelT<M>::copy()
     std::vector<typename M::VertexHandle>  face_vhandles;
     for (typename M::FaceVertexIter vf_it=mesh.fv_iter(fh); vf_it; ++vf_it)
     {
-      typename std::unordered_map<int, typename M::VertexHandle>::const_iterator got = mymap.find (vf_it.handle().idx());
+      typename std::unordered_map<int, typename M::VertexHandle>::const_iterator got = mymap.find (vf_it->idx());
       if ( got == mymap.end() ){
         typename M::VertexHandle vh = m.add_vertex(mesh.point(*vf_it));
         face_vhandles.push_back(vh);
-        mymap.insert(std::make_pair<int, typename M::VertexHandle>(vf_it.handle().idx(), vh ));
+        mymap.insert(std::make_pair<int, typename M::VertexHandle>(vf_it->idx(), vh ));
       }else
         face_vhandles.push_back(got->second);
     }
