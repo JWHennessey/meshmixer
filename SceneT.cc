@@ -142,7 +142,7 @@ SceneT<M>::SceneT()
   pasteSpinBox = new QSpinBox();
   pasteSpinBox->setMinimum(1);
   pasteSpinBox->setMaximum(10);
-  pasteSpinBox->setPrefix("Mesh No.: ");
+  pasteSpinBox->setPrefix("Paste to Mesh No.: ");
   controls->layout()->addWidget(pasteSpinBox);
   pasteSpinBox->setHidden(true);
   
@@ -263,11 +263,11 @@ SceneT<M>::drawForeground(QPainter *painter, const QRectF &rect)
     glLineWidth(1);
     glColor3f(255,255,255);
     glVertex3f(0, 0, 0);
-    glVertex3f(100, 0, 0);
+    glVertex3f(2, 0, 0);
     glVertex3f(0, 0, 0);
-    glVertex3f(0, 100, 0);
+    glVertex3f(0, 2, 0);
     glVertex3f(0, 0, 0);
-    glVertex3f(0, 0, 100);
+    glVertex3f(0, 0, 2);
     glEnd();
     
     glEnable(GL_MULTISAMPLE);
@@ -302,7 +302,7 @@ SceneT<M>::softICP(QtModelT<M>* m1, QtModelT<M>* m2)
   std::cout << snapSize << " " << sizeM1 << sizeM2 << " snap\n";
   std::cout << m1SnapRegion.size() << " " << m2SnapRegion.size() << " snap\n";
   
-  int iterations = 2;
+  int iterations = 3;
   int iterCount = 1;
   while (iterCount <= iterations){
     std::cout << "\nStart Iteration " << iterCount << "\n\n";
@@ -348,7 +348,6 @@ SceneT<M>::runICP(QtModelT<M>* m1, QtModelT<M>* m2, std::vector<size_t> m1SnapRe
     if (iterCount == 1) {
       //For each point we start from a maximal neighborhood that includes all
       intersection = m1SnapRegion;
-      std::cout << vcount << ": " << intersection.size() << " inter\n";
     } else {
       //calculate distance to snapping region
         double radius = getDistanceToBoundary(m1,query_pt, iterCount, snapSize);
@@ -359,11 +358,12 @@ SceneT<M>::runICP(QtModelT<M>* m1, QtModelT<M>* m2, std::vector<size_t> m1SnapRe
         std::set_intersection(neighbours.begin(),neighbours.end(),m1SnapRegion.begin(),m1SnapRegion.end(),std::back_inserter(intersection));
         std::cout << vcount << ": " << intersection.size() << " " << neighbours.size() << " " << m1SnapRegion.size() << " inter\n";
         while (intersection.size() == 0){
-          radius *= 1.1;
+          radius += DBL_MIN;
+          radius *= 2;
           neighbours = findLocalNeighbourhood(query_pt, m1Matrix, radius);
           std::sort(neighbours.begin(), neighbours.end());
           std::set_intersection(neighbours.begin(),neighbours.end(),m1SnapRegion.begin(),m1SnapRegion.end(),std::back_inserter(intersection));
-          std::cout << query_pt[0] << m1Matrix.row(vi) << ": " << intersection.size() << " " << neighbours.size() << " " << radius << " inter\n";
+          std::cout << query_pt[0] << m1Matrix.row(vi) << ": " << intersection.size() << " " << neighbours.size() << " " << radius << " inter2\n";
         }
     }
     //Calculate the transformation Ti based on φ|N(pi)
@@ -413,11 +413,6 @@ SceneT<M>::runICP(QtModelT<M>* m1, QtModelT<M>* m2, std::vector<size_t> m1SnapRe
     point << m1Matrix(vi,0), m1Matrix(vi,1), m1Matrix(vi, 2);
     scale << (correScale/localScale)[0], (correScale/localScale)[1], (correScale/localScale)[2];
     scalings.push_back((point - localMean).cwiseProduct(scale));
-    std::cout << localMean;
-    for (int z = 0; z < localMatrix.rows(); z++){
-      localMatrix.row(z) = localMatrix.row(z) + (localMatrix.row(z) - localMean).cwiseProduct(scale);
-    }
-    std::cout << localMatrix.colwise().mean() << "\n";
     
     PointMatrix qHat(x, 3);
     PointMatrix pHat(x, 3);
@@ -441,12 +436,11 @@ SceneT<M>::runICP(QtModelT<M>* m1, QtModelT<M>* m2, std::vector<size_t> m1SnapRe
     std::cout << "Iteration " << iterCount << "\n";
     
     if (isnan(R(0,0) + R(1,1) + R(2,2)) || isinf(t.norm()) ) {
-      std::cout << "R error" << (R(0,0) + R(1,1) + R(2,2)) << A << "\n" << pHat<< "\n" << qHat << "\n";
-      std::cout << "t error" << t.norm() << "\n\n";
+      std::cout << "R error" << (R(0,0) + R(1,1) + R(2,2)) << " | ";
+      std::cout << "Norm of t" << t.norm() << "\n\n";
     } else {
-      std::cout << "Sum of diagonal of R " << (R(0,0) + R(1,1) + R(2,2)) << "\n";
+      std::cout << "Sum of diagonal of R " << (R(0,0) + R(1,1) + R(2,2)) << " ";
       std::cout << "Norm of t " << t.norm() << "\n\n";
-      std::cout << "Scaling " << correScale/localScale << "\n\n";
     }
     rotations.push_back(R);
     translations.push_back(t);
@@ -503,13 +497,13 @@ getDistanceToBoundary(QtModelT<M>* m1, std::vector<double> query_pt, int iterCou
   //distance to snapping region is distance to boundary - snapSize
   double distToSnap = std::abs(dist - snapSize);
   //if (snapDist == 0) snapDist == DBL_MIN;
-  long indices = pow(iterCount/distToSnap,2);
+  long indices = pow(iterCount/(dist/snapSize),2);
   double radius = snapSize*0.1 + snapSize * exp(-indices);
   
   std::cout << distToSnap << " " << snapSize << " " << dist << " " <<  exp(-indices) << " " << radius << " radius\n";
   //for points outside the snapping region offset with their distance to the snapping region
   if (dist > snapSize) {
-    radius = radius + distToSnap;
+    radius = radius + dist;
     std::cout << radius << " radius2\n";
   }
   return radius;
@@ -662,7 +656,6 @@ SceneT<M>::computeSnapRegion(QtModelT<M>* m1, float snapMax)
       snapRegion.push_back(resultPairs[j].first);
     }
   }
-  //std::cout << snapRegion.size() << " ";
   std::sort(snapRegion.begin(), snapRegion.end());
   snapRegion.erase(std::unique(snapRegion.begin(), snapRegion.end()), snapRegion.end());
   //std::cout << snapRegion.size() << " unique\n";
